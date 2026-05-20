@@ -1,0 +1,17 @@
+model SessionAdmin {
+  id         String   @id @default(cuid())
+  adminId     String   
+  admin       Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  userAgent  String?
+  refreshTokenHash String   @unique  // хешированный JWT{}
+  expiresAt   DateTime        
+  previousRefreshTokenHash String? @unique  // старый токен
+  previousTokenExpiresAt   DateTime?        // когда он умрёт
+  ip         String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime
+
+  @@index([adminId])
+  @@index([refreshTokenHash])
+}

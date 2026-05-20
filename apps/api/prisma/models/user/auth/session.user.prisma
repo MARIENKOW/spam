@@ -1,0 +1,17 @@
+model SessionUser {
+  id         String   @id @default(cuid())
+  userId     String   
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  userAgent  String?
+  refreshTokenHash String   @unique  // хешированный JWT{}
+  expiresAt   DateTime        
+  previousRefreshTokenHash String? @unique  // старый токен
+  previousTokenExpiresAt   DateTime?        // когда он умрёт
+  ip         String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime
+
+  @@index([userId])
+  @@index([refreshTokenHash])
+}

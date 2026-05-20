@@ -1,0 +1,27 @@
+
+model User {
+  id            String    @id @default(cuid())
+  email         String   @unique
+  passwordHash  String?
+
+  theme  String?
+  locale  String?
+  status          StatusUser @default(NOACTIVE)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  passwordChangedAt    DateTime?
+  lastSeenAt      DateTime?
+  lastLoginAt     DateTime?
+  note            String?
+
+  avatarId          String?   @unique 
+  avatar Image? @relation(fields: [avatarId], references: [id], onDelete:SetNull)
+
+  sessions      SessionUser[]
+  resetPasswordToken      ResetPasswordTokenUser?
+  changePasswordCode      ChangePasswordCodeUser?
+  activateToken      ActivateTokenUser?
+
+  @@map("users")
+}

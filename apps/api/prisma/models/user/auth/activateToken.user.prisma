@@ -1,0 +1,13 @@
+model ActivateTokenUser {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   
+
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@map("activateToken")
+  @@index(userId)
+  @@index(expiresAt)
+}

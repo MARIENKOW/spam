@@ -1,0 +1,33 @@
+# ── Version control ──────────────────────────────────────────────────────────
+.git
+.gitignore
+
+# ── Build artefacts ───────────────────────────────────────────────────────────
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/tsconfig.tsbuildinfo
+
+# ── Local dev / CI ────────────────────────────────────────────────────────────
+.env
+.env.local
+**/.env.local
+**/coverage
+
+# ── User uploads (bind-mounted at runtime, not baked into image) ─────────────
+apps/api/uploads
+
+# ── Backups ───────────────────────────────────────────────────────────────────
+backups
+
+# ── Editor / OS ───────────────────────────────────────────────────────────────
+.vscode
+.idea
+*.DS_Store
+Thumbs.db
+
+# ── Docker files themselves ───────────────────────────────────────────────────
+docker-compose*.yml
+**/Dockerfile*
+**/.dockerignore

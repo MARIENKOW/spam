@@ -1,0 +1,189 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Docker Compose — market monorepo
+#
+# ROLLBACK (requirement 4)
+# ────────────────────────
+# Build and tag before deploy:
+#   docker compose build --no-cache
+#   docker tag api:latest api:v1.2.3
+#   docker tag web:latest web:v1.2.3
+#
+# If the new deploy is broken — rollback in 5 seconds:
+#   docker compose stop api web
+#   docker tag api:v1.2.2 api:latest
+#   docker tag web:v1.2.2 web:latest
+#   docker compose up -d api web
+#
+# ZERO-DOWNTIME DEPLOY (requirement 5)
+# ─────────────────────────────────────
+# With a single-node compose setup, zero-downtime is achieved by scaling:
+#   docker compose up -d --no-deps --scale api=2 --no-recreate api
+#   # wait for new container to pass healthcheck, then:
+#   docker compose up -d --no-deps --scale api=1 api
+# For full zero-downtime (blue/green), use Docker Swarm or Kubernetes.
+# In practice, NestJS restart takes ~5-10 s and Next.js restarts in ~3-5 s.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+    # ── PostgreSQL 16 ──────────────────────────────────────────────────────────
+    postgres:
+        image: postgres:16
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: ${DB_DATABASE}
+            PGPORT: ${DB_PORT:-5432}
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        networks:
+            - app-network
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_DATABASE} -p ${DB_PORT:-5432}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+
+    # ── NestJS API ─────────────────────────────────────────────────────────────
+    api:
+        build:
+            context: .
+            dockerfile: apps/api/Dockerfile
+            secrets:
+                - env
+        image: api:latest
+        restart: unless-stopped
+        env_file: .env
+        depends_on:
+            postgres:
+                condition: service_healthy
+        volumes:
+            # Uploaded files must survive container restarts / rebuilds
+            - ./apps/api/uploads:/app/uploads
+        networks:
+            - app-network
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "wget -qO- http://localhost:${SERVER_PORT:-5000}/${NEXT_PUBLIC_API_GLOBAL_PREFIX:-api}/health || exit 1",
+                ]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+
+    # ── Next.js Web ────────────────────────────────────────────────────────────
+    web:
+        build:
+            context: .
+            dockerfile: apps/web/Dockerfile
+            secrets:
+                - env
+        image: web:latest
+        restart: unless-stopped
+        env_file: .env
+        depends_on:
+            api:
+                condition: service_healthy
+        networks:
+            - app-network
+        healthcheck:
+            test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+
+    # ── Nginx ──────────────────────────────────────────────────────────────────
+    # Сценарии (NGINX_MODE в .env):
+    #   default — только IP, без домена
+    #   domain  — домен + SSL
+    #
+    # SSL — первый запуск (один раз):
+    #   docker compose run --rm certbot certonly --webroot \
+    #     -w /var/www/certbot -d $DOMAIN --agree-tos \
+    #     --email your@email.com          # или --register-unsafely-without-email
+    nginx:
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - "80:80"
+            - "443:443"
+        environment:
+            SERVER_PORT: ${SERVER_PORT:-5000}
+            NEXT_PUBLIC_API_GLOBAL_PREFIX: ${NEXT_PUBLIC_API_GLOBAL_PREFIX:-api}
+            DOMAIN: ${DOMAIN:-localhost}
+        volumes:
+            - ./nginx/templates/${NGINX_MODE:-default}.conf.template:/etc/nginx/templates/default.conf.template:ro
+            - certbot-certs:/etc/letsencrypt:ro
+            - certbot-webroot:/var/www/certbot:ro
+        networks:
+            - app-network
+        depends_on:
+            api:
+                condition: service_healthy
+            web:
+                condition: service_healthy
+
+    # ── Certbot (только для SSL) ───────────────────────────────────────────────
+    certbot:
+        image: certbot/certbot
+        restart: unless-stopped
+        volumes:
+            - certbot-certs:/etc/letsencrypt
+            - certbot-webroot:/var/www/certbot
+        entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+    # ── Nightly PostgreSQL backup ──────────────────────────────────────────────
+    postgres-backup:
+        image: prodrigestivill/postgres-backup-local:16
+        restart: unless-stopped
+        environment:
+            POSTGRES_HOST: postgres
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: ${DB_DATABASE}
+            POSTGRES_EXTRA_OPTS: "-Z6 --schema=public --blobs"
+            SCHEDULE: "0 2 * * *" # every night at 02:00 UTC
+            BACKUP_KEEP_DAYS: 7
+            BACKUP_KEEP_WEEKS: 4
+            BACKUP_KEEP_MONTHS: 6
+            HEALTHCHECK_PORT: 8080
+        volumes:
+            - ./backups:/backups
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - app-network
+
+    # ── Uptime Kuma ────────────────────────────────────────────────────────────
+    # Access: http://<server-ip>:3001
+    # First login: create admin account in the UI (no default credentials).
+    # Telegram notifications: Settings → Notifications → Telegram.
+    uptime-kuma:
+        image: louislam/uptime-kuma:1
+        profiles: [kuma]
+        restart: unless-stopped
+        ports:
+            - "3001:3001"
+        volumes:
+            - uptime-kuma-data:/app/data
+        networks:
+            - app-network
+
+networks:
+    app-network:
+        driver: bridge
+
+volumes:
+    pgdata:
+    uptime-kuma-data:
+    certbot-certs:
+    certbot-webroot:
+
+secrets:
+    env:
+        file: .env

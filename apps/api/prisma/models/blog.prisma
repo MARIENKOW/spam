@@ -1,0 +1,23 @@
+model Blog {
+    id          String      @id @default(uuid())
+    title       String
+    subtitle    String?
+    body        String      @db.Text
+    publishedAt DateTime
+    isMain      Boolean     @default(false) 
+    isImportant Boolean     @default(false) 
+    isShort     Boolean     @default(false) 
+    createdAt     DateTime                @default(now())
+    updatedAt     DateTime                @updatedAt
+    search_vector Unsupported("tsvector")? @default(dbgenerated())
+
+    imageId     String     @unique
+    image       Image      @relation("BlogMainImage", fields: [imageId], references: [id], onDelete:Restrict, onUpdate: Cascade)
+    bodyImages  Image[]    @relation("BlogBodyImages")
+    bodyVideos  Video[]    @relation("BlogBodyVideos")
+
+    @@index([isMain])
+    @@index([isImportant])
+    @@index([publishedAt])
+    @@map("blogs")
+}

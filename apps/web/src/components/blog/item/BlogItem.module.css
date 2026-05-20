@@ -1,0 +1,26 @@
+.subtitle {
+    overflow: hidden;
+    display: -webkit-box;
+    line-clamp: 3;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+.subtitle * {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+.subtitle p {
+    margin: 0;
+}
+
+.subtitle img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}

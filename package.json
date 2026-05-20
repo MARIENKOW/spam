@@ -1,0 +1,42 @@
+{
+    "name": "market",
+    "private": true,
+    "packageManager": "pnpm@11.0.8+sha512.4c4097e1dd2d42372c4e7fa5a791ff28fc75a484c7ac192e64b1df0fdef17594ba982f9b4fed9adfb3c757846f565b799b2763fb3733d1de1bcb82cf46684912",
+    "scripts": {
+        "build:shared": "turbo run build --filter=@myorg/shared",
+        "dev": "turbo run dev",
+        "start": "turbo run start --filter=api --filter=web",
+        "build": "turbo run build",
+        "docker:up": "docker compose up -d",
+        "docker:down": "docker compose down",
+        "docker:build": "docker compose build",
+        "docker:logs": "docker compose logs -f",
+        "nginx:reload": "docker compose exec nginx nginx -s reload",
+        "nginx:test": "docker compose exec nginx nginx -t",
+        "nginx:restart": "docker compose restart nginx",
+        "ssl:init": "sh scripts/ssl-init.sh",
+        "kuma:up": "docker compose --profile kuma up -d uptime-kuma",
+        "kuma:down": "docker compose stop uptime-kuma",
+        "docker:seed": "docker compose exec api node_modules/.bin/tsx prisma/seed.ts"
+    },
+    "devDependencies": {
+        "turbo": "^2.8.17",
+        "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "i18next": "^25.6.3",
+        "i18next-fs-backend": "^2.6.1",
+        "react-i18next": "^16.3.5"
+    },
+    "pnpm": {
+        "overrides": {
+            "picomatch": "4.0.4",
+            "@hono/node-server": ">=1.19.13",
+            "ajv": ">=8.17.2",
+            "hono": "^4.12.7",
+            "effect": "^3.20.0",
+            "uuid": ">=14.0.0",
+            "postcss": ">=8.5.10"
+        }
+    }
+}

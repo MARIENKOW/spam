@@ -1,0 +1,28 @@
+
+model Admin {
+  id            String    @id @default(cuid())
+  email         String   @unique
+  passwordHash  String?
+  note          String?
+
+  theme         String?
+  locale        String?
+
+  status        StatusAdmin @default(ACTIVE)
+  role          RoleAdmin @default(ADMIN)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  passwordChangedAt    DateTime?
+  lastSeenAt    DateTime?
+  lastLoginAt   DateTime?
+
+  avatarId          String?   @unique 
+  avatar Image? @relation(fields: [avatarId], references: [id], onDelete:SetNull)
+
+  sessions      SessionAdmin[]
+  changePasswordCode      ChangePasswordCodeAdmin?
+  resetPasswordToken      ResetPasswordTokenAdmin?
+
+  @@map("admins")
+}

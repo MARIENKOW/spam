@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "SessionUser" ALTER COLUMN "userAgent" DROP NOT NULL,
+ALTER COLUMN "ip" DROP NOT NULL;

@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES2023",
+        "strict": true,
+        "composite": true
+    },
+    "references": [
+        { "path": "./packages/shared" },
+        { "path": "./apps/api" }
+    ]
+}

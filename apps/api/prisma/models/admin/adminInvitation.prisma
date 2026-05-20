@@ -1,0 +1,12 @@
+model AdminInvitation {
+    id        String    @id @default(uuid())
+    email     String    @unique
+    note      String?
+    token     String    @unique @default(uuid())
+    revokedAt DateTime?
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    @@index([email])
+    @@map("admin_invitations")
+}

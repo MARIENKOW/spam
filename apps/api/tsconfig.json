@@ -1,0 +1,28 @@
+{
+    "extends": "../../tsconfig.json",
+    "references": [{ "path": "../../packages/shared" }],
+    "include": ["src"],
+    "compilerOptions": {
+        "module": "node16",
+        "moduleResolution": "node16",
+        "target": "ES2023",
+
+        "strict": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+
+        "sourceMap": true,
+        "outDir": "./dist",
+        "rootDir": ".",
+        "baseUrl": "./",
+        "paths": {
+            "@/*": ["src/*"]
+        },
+
+        "incremental": true,
+        "skipLibCheck": true
+    }
+}

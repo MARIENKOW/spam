@@ -1,0 +1,19 @@
+
+model Video {
+    id         String          @id @default(uuid())
+    entityType FileEntityType // определяет папку и уровень доступа
+    filename   String          // UUID.mp4 / UUID.webm / UUID.mov
+    mimeType   String          // video/mp4 / video/webm / ...
+    path       String?
+    width      Int
+    height     Int
+    duration   Float           // секунды (с дробной частью)
+    size       Int             // байты
+    imageId String?         @unique
+    image   Image?          @relation(fields: [imageId], references: [id])
+    createdAt  DateTime      @default(now())
+
+    blogBody Blog[] @relation("BlogBodyVideos")
+
+    @@index([entityType])
+}

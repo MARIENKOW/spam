@@ -1,0 +1,11 @@
+node_modules
+dist
+.next
+.turbo
+tsconfig.tsbuildinfo
+tsconfig.build.tsbuildinfo
+coverage
+uploads
+.env
+.env.local
+*.DS_Store

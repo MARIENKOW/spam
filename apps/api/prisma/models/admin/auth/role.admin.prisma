@@ -1,0 +1,4 @@
+enum RoleAdmin {
+  ADMIN
+  SUPERADMIN
+}
