@@ -17,7 +17,7 @@ export const ROUTE = {
         },
     },
     admin: {
-        path: "admin",
+        path: "",
         blog: {
             path: "blog",
             create: {

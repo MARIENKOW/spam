@@ -34,70 +34,15 @@ export default async function Mid(req: NextRequest) {
 
     const res = createMiddleware(routing)(req);
     res.headers.set("x-pathname", pathname);
-    if (isEqualPath(ADMIN_PATH, pathname)) {
-        const accessTokenAdmin = req.cookies.get("accessTokenAdmin")?.value;
-        if (accessTokenAdmin) {
-            if (isTokenExpired(accessTokenAdmin)) {
-                try {
-                    const refreshResponse = await adminAuth.refresh();
-                    forwardSetCookies(refreshResponse, res);
-                } catch {
-                    // if (isEqualPath(PRIVATE_ADMIN_PATH, pathname)) {
-                    //     const loginUrl = new URL(
-                    //         locale
-                    //             ? `/${locale}${ADMIN_PRIVATE_FALLBACK_ROUTE}`
-                    //             : ADMIN_PRIVATE_FALLBACK_ROUTE,
-                    //         req.url,
-                    //     );
-                    //     loginUrl.searchParams.set("callback", pathname);
-                    //     return NextResponse.redirect(loginUrl);
-                    // }
-                }
-            }
-        } else {
-            // if (isEqualPath(PRIVATE_ADMIN_PATH, pathname)) {
-            //     const loginUrl = new URL(
-            //         locale
-            //             ? `/${locale}${ADMIN_PRIVATE_FALLBACK_ROUTE}`
-            //             : ADMIN_PRIVATE_FALLBACK_ROUTE,
-            //         req.url,
-            //     );
-            //     loginUrl.searchParams.set("callback", pathname);
-            //     return NextResponse.redirect(loginUrl);
-            // }
+    const accessTokenAdmin = req.cookies.get("accessTokenAdmin")?.value;
+    if (accessTokenAdmin) {
+        if (isTokenExpired(accessTokenAdmin)) {
+            try {
+                const refreshResponse = await adminAuth.refresh();
+                forwardSetCookies(refreshResponse, res);
+            } catch {}
         }
     } else {
-        const accessTokenUser = req.cookies.get("accessTokenUser")?.value;
-        if (accessTokenUser) {
-            if (isTokenExpired(accessTokenUser)) {
-                try {
-                    const refreshResponse = await userAuth.refresh();
-                    forwardSetCookies(refreshResponse, res);
-                } catch {
-                    // if (isEqualPath(PRIVATE_USER_PATH, pathname)) {
-                    //     const loginUrl = new URL(
-                    //         locale
-                    //             ? `/${locale}${USER_PRIVATE_FALLBACK_ROUTE}`
-                    //             : USER_PRIVATE_FALLBACK_ROUTE,
-                    //         req.url,
-                    //     );
-                    //     loginUrl.searchParams.set("callback", pathname);
-                    //     return NextResponse.redirect(loginUrl);
-                    // }
-                }
-            }
-        } else {
-            // if (isEqualPath(PRIVATE_USER_PATH, pathname)) {
-            //     const loginUrl = new URL(
-            //         locale
-            //             ? `/${locale}${USER_PRIVATE_FALLBACK_ROUTE}`
-            //             : USER_PRIVATE_FALLBACK_ROUTE,
-            //         req.url,
-            //     );
-            //     loginUrl.searchParams.set("callback", pathname);
-            //     return NextResponse.redirect(loginUrl);
-            // }
-        }
     }
     return res;
 }
