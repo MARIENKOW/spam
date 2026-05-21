@@ -69,6 +69,10 @@ export const defaultUserParams: UserParams = {
     query: "",
 };
 
+// --- TgAccount ---
+export type TgAccountParams = Pagination;
+export const defaultTgAccountParams: TgAccountParams = { page: 1 };
+
 // --- Video ---
 export type VideoParams = Pagination;
 export const defaultVideoParams: VideoParams = { page: 1 };

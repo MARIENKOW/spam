@@ -3,4 +3,5 @@ enum FileEntityType {
     BLOG_IMAGE
     BLOG_MAIN_IMAGE
     AVATAR
+    TG_ACCOUNT_PHOTO
 }

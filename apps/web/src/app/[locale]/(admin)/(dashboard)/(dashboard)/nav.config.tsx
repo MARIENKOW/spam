@@ -4,22 +4,32 @@ import NewspaperIcon from "@mui/icons-material/Newspaper";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import PeopleIcon from "@mui/icons-material/People";
 import PersonIcon from "@mui/icons-material/Person";
+import SendToMobileIcon from "@mui/icons-material/SendToMobile";
 import { AdminDto } from "@myorg/shared/dto";
 
 export const NAV_GROUPS: (role: AdminDto["role"]) => NavGroup[] = (role) => [
     {
         items: [
+            // {
+            //     label: "pages.admin.blog.name",
+            //     href: FULL_PATH_ROUTE.admin.blog.path,
+            //     activeLink: {
+            //         strict: [
+            //             FULL_PATH_ROUTE.admin.path,
+            //             // ...AllPathsFromRoute(FULL_PATH_ROUTE.admin.blog),
+            //         ],
+            //         safe: [FULL_PATH_ROUTE.admin.blog.path],
+            //     },
+            //     icon: <NewspaperIcon />,
+            // },
             {
-                label: "pages.admin.blog.name",
-                href: FULL_PATH_ROUTE.admin.blog.path,
+                label: "pages.admin.tgAccounts.name",
+                href: FULL_PATH_ROUTE.admin.tgAccounts.path,
                 activeLink: {
-                    strict: [
-                        FULL_PATH_ROUTE.admin.path,
-                        // ...AllPathsFromRoute(FULL_PATH_ROUTE.admin.blog),
-                    ],
-                    safe: [FULL_PATH_ROUTE.admin.blog.path],
+                    strict: [FULL_PATH_ROUTE.admin.path],
+                    safe: [FULL_PATH_ROUTE.admin.tgAccounts.path],
                 },
-                icon: <NewspaperIcon />,
+                icon: <SendToMobileIcon />,
             },
         ],
     },

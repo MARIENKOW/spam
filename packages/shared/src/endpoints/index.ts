@@ -146,6 +146,14 @@ export const ENDPOINT = {
             upload: { path: "upload" },
         },
     },
+    tgAccount: {
+        path: "tg-accounts",
+        auth: {
+            path: "auth",
+            start: { path: "start" },
+            verify: { path: "verify" },
+        },
+    },
     resetPasswordToken: {
         path: "reset-password-token",
         user: {

@@ -93,6 +93,17 @@ export const en: MessageStructure = {
                 max: `maximum ${BLOG_SUBTITLE_MAX_LENGTH} characters`,
             },
         },
+        tgAccount: {
+            phone: {
+                label: "Phone number",
+                invalid: "Invalid format. Use: +1234567890",
+                placeholder: "+1234567890",
+                unique: "This account is already added",
+                uniqueOwn: "You already added this account",
+            },
+            code: { label: "Verification code from Telegram", invalid: "Invalid code" },
+            password: { label: "2FA cloud password", invalid: "Invalid 2FA password" },
+        },
         optional:`*optional`,
         required: "Required field",
         submit: "Submit",
@@ -337,6 +348,38 @@ export const en: MessageStructure = {
                     isRevoked: "Invitation is revoked and cannot be resent",
                     unrevoked: "Invitation restored",
                 },
+            },
+            tgAccounts: {
+                name: "TG Accounts",
+                add: {
+                    name: "Add account",
+                    steps: {
+                        phone: "Phone number",
+                        code: "Confirmation code",
+                        password: "2FA Password",
+                    },
+                    hints: {
+                        phone: "Enter the phone number linked to your Telegram account",
+                        code: "Telegram has sent a code to your account",
+                        password: "This account is protected by two-factor authentication",
+                    },
+                },
+                status: {
+                    ACTIVE: "Active",
+                    INACTIVE: "Inactive",
+                    BANNED: "Banned",
+                },
+                premium: "Premium",
+                added: "Added {time}",
+                empty: "No accounts yet",
+                feedback: {
+                    added: "Account added successfully",
+                    deleted: "Account deleted",
+                },
+                errors: {
+                    attachedToOther: "This account is already attached to {email}",
+                },
+                owner: "Owner",
             },
             login: {
                 name: "Login",

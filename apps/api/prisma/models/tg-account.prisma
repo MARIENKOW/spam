@@ -1,0 +1,27 @@
+model TgAccount {
+    id            String          @id @default(uuid())
+    phone         String          @unique
+    sessionString String
+    telegramId    String          @unique
+    firstName     String
+    lastName      String?
+    username      String?
+    photoId       String?         @unique
+    photo         Image?          @relation(fields: [photoId], references: [id], onDelete: SetNull)
+    isPremium     Boolean         @default(false)
+    status        TgAccountStatus @default(ACTIVE)
+    createdAt     DateTime        @default(now())
+
+    adminId       String
+    admin         Admin           @relation(fields: [adminId], references: [id])
+
+    @@index([status])
+    @@index([adminId])
+    @@map("tg_accounts")
+}
+
+enum TgAccountStatus {
+    ACTIVE
+    INACTIVE
+    BANNED
+}

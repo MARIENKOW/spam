@@ -48,6 +48,10 @@ export const serverEnvSchema = z
         
         FILE_SECRET: z.string().min(1),
 
+        // Telegram MTProto
+        TELEGRAM_API_ID: z.coerce.number().int().positive(),
+        TELEGRAM_API_HASH: z.string().min(1),
+
         SUPERADMIN_EMAIL: Email.or(z.literal("")),
         SUPERADMIN_PASSWORD: Password.or(z.literal("")),
 

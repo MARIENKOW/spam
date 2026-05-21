@@ -10,7 +10,8 @@ model Image {
     admin Admin? // обратная связь — без неё Prisma не скомпилирует
     blog     Blog?   @relation("BlogMainImage")
     blogBody Blog[]  @relation("BlogBodyImages")
-    video Video? // обратная связь — без неё Prisma не скомпилирует
+    video      Video?     // обратная связь — без неё Prisma не скомпилирует
+    tgAccount  TgAccount? // обратная связь
     height     Int
     size       Int             // байты
     createdAt  DateTime        @default(now())

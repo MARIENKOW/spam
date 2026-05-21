@@ -20,6 +20,10 @@ export const FILE_CONFIG: Record<FileEntityType, FileEntityConfig> = {
         folder: "blog/main-image",
         private: false,
     },
+    [FileEntityType.TG_ACCOUNT_PHOTO]: {
+        folder: "tg-accounts",
+        private: false,
+    },
 };
 
 export const FILE_PUBLIC: FileEntityConfig[] = Object.entries(FILE_CONFIG)

@@ -1,5 +1,6 @@
 import BlogPage from "@/app/[locale]/(admin)/(dashboard)/(dashboard)/blog/BlogPage";
 import { NAV_GROUPS } from "@/app/[locale]/(admin)/(dashboard)/(dashboard)/nav.config";
+import TgAccountsPage from "@/app/[locale]/(admin)/(dashboard)/(dashboard)/tg-accounts/TgAccountsPage";
 import AuthErrorElement from "@/components/feedback/error/AuthErrorElement";
 import MobileNavigation from "@/components/layout/navigation/MobileNavigation";
 import { getAdminAuth } from "@/utils/cache/admin.cache.me";
@@ -18,7 +19,7 @@ export default async function AdminHome({ searchParams }: Props) {
                 flexDirection={"column"}
                 sx={{ display: { xs: "none", md: "flex" } }}
             >
-                <BlogPage searchParams={searchParams} />
+                <TgAccountsPage searchParams={searchParams} />
             </Box>
 
             <Box

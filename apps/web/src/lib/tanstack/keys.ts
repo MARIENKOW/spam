@@ -3,6 +3,7 @@ import type {
     BlogParams,
     ImageParams,
     InvitationParams,
+    TgAccountParams,
     UserParams,
     VideoParams,
 } from "@/lib/tanstack/listDefaults";
@@ -52,4 +53,10 @@ export const userKeys = {
 
 export const userSessionKeys = {
     all: (userId: string) => ["user-sessions", userId] as const,
+};
+
+export const tgAccountKeys = {
+    all: ["tg-accounts"] as const,
+    lists: () => [...tgAccountKeys.all, "list"] as const,
+    list: (params: TgAccountParams) => [...tgAccountKeys.lists(), params] as const,
 };

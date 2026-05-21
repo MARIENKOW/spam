@@ -92,6 +92,17 @@ export const ru = {
                 max: `максимум ${BLOG_SUBTITLE_MAX_LENGTH} символов`,
             },
         },
+        tgAccount: {
+            phone: {
+                label: "Номер телефона",
+                invalid: "Неверный формат. Используйте: +1234567890",
+                placeholder: "+1234567890",
+                unique: "Этот аккаунт уже добавлен",
+                uniqueOwn: "Вы уже добавили этот аккаунт",
+            },
+            code: { label: "Код подтверждения из Telegram", invalid: "Неверный код" },
+            password: { label: "Облачный пароль 2FA", invalid: "Неверный пароль 2FA" },
+        },
         optional: `*необязательное поле`,
         required: "обязательное поле",
         submit: "Подтвердить",
@@ -354,6 +365,38 @@ export const ru = {
                         "Приглашение отозвано и не может быть отправлено повторно",
                     unrevoked: "Приглашение восстановлено",
                 },
+            },
+            tgAccounts: {
+                name: "TG Аккаунты",
+                add: {
+                    name: "Добавить аккаунт",
+                    steps: {
+                        phone: "Номер телефона",
+                        code: "Код подтверждения",
+                        password: "Пароль 2FA",
+                    },
+                    hints: {
+                        phone: "Введите номер телефона привязанного к вашему Telegram аккаунту",
+                        code: "Telegram отправил код на ваш аккаунт",
+                        password: "Этот аккаунт защищён двухфакторной аутентификацией",
+                    },
+                },
+                status: {
+                    ACTIVE: "Активен",
+                    INACTIVE: "Неактивен",
+                    BANNED: "Заблокирован",
+                },
+                premium: "Premium",
+                added: "Добавлен {time}",
+                empty: "Аккаунтов пока нет",
+                feedback: {
+                    added: "Аккаунт успешно добавлен",
+                    deleted: "Аккаунт удалён",
+                },
+                errors: {
+                    attachedToOther: "Этот аккаунт уже прикреплён к {email}",
+                },
+                owner: "Владелец",
             },
             login: {
                 name: "Вход",

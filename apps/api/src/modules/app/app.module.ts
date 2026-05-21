@@ -18,6 +18,7 @@ import { FileModule } from "@/infrastructure/file/file.module";
 import { AdminInvitationModule } from "@/modules/admin/invitation/adminInvitation.module";
 import { AdminManagementModule } from "@/modules/admin/management/adminManagement.module";
 import { UserManagementModule } from "@/modules/admin/userManagement/userManagement.module";
+import { TgAccountModule } from "@/modules/tg-account/tg-account.module";
 @Module({
     imports: [
         CoreModule,
@@ -33,6 +34,7 @@ import { UserManagementModule } from "@/modules/admin/userManagement/userManagem
         BlogImageModule,
         BlogVideoModule,
         BlogModule,
+        TgAccountModule,
         I18nModule.forRoot({
             loaderOptions: {},
             fallbackLanguage: defaultLanguage,

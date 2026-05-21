@@ -23,6 +23,7 @@ model Admin {
   sessions      SessionAdmin[]
   changePasswordCode      ChangePasswordCodeAdmin?
   resetPasswordToken      ResetPasswordTokenAdmin?
+  tgAccounts    TgAccount[]
 
   @@map("admins")
 }

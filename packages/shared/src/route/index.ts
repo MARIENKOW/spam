@@ -42,6 +42,10 @@ export const ROUTE = {
         users: { path: "users" },
         invitations: { path: "invitations" },
         invitation: { path: "invitation" },
+        tgAccounts: {
+            path: "tg-accounts",
+            add: { path: "add" },
+        },
     },
 } as const;
 
