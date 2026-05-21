@@ -1,0 +1,106 @@
+model Broadcast {
+    id          String          @id @default(uuid())
+    tgAccountId String          @unique
+    tgAccount   TgAccount       @relation(fields: [tgAccountId], references: [id], onDelete: Cascade)
+    message     String          @default("")
+    status      BroadcastStatus @default(DRAFT)
+    startedAt   DateTime?
+    completedAt DateTime?
+    createdAt   DateTime        @default(now())
+    updatedAt   DateTime        @updatedAt
+
+    channels   BroadcastChannel[]
+    recipients BroadcastRecipient[]
+    runs       BroadcastRun[]
+
+    @@map("broadcasts")
+}
+
+model BroadcastChannel {
+    id             String    @id @default(uuid())
+    broadcastId    String
+    broadcast      Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+    telegramId     String
+    username       String?
+    title          String
+    photoUrl       String?
+    memberCount    Int?
+    recipientCount Int?
+
+    @@unique([broadcastId, telegramId])
+    @@index([broadcastId])
+    @@map("broadcast_channels")
+}
+
+model BroadcastRecipient {
+    id           String          @id @default(uuid())
+    broadcastId  String
+    broadcast    Broadcast       @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+    userId       String
+    accessHash   String?
+    username     String?
+    firstName    String?
+    lastName     String?
+    status       RecipientStatus @default(PENDING)
+    errorMessage String?
+    sentAt       DateTime?
+
+    @@unique([broadcastId, userId])
+    @@index([broadcastId])
+    @@index([broadcastId, status])
+    @@map("broadcast_recipients")
+}
+
+model BroadcastRun {
+    id               String    @id @default(uuid())
+    broadcastId      String
+    broadcast        Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+    message          String
+    channelsSnapshot Json      @default("[]")
+    status           RunStatus
+    sentCount        Int       @default(0)
+    failedCount      Int       @default(0)
+    totalCount       Int       @default(0)
+    startedAt        DateTime
+    finishedAt       DateTime  @default(now())
+
+    recipients BroadcastRunRecipient[]
+
+    @@index([broadcastId])
+    @@map("broadcast_runs")
+}
+
+model BroadcastRunRecipient {
+    id           String    @id @default(uuid())
+    runId        String
+    run          BroadcastRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+    userId       String
+    username     String?
+    firstName    String?
+    lastName     String?
+    status       RecipientStatus
+    errorMessage String?
+    sentAt       DateTime?
+
+    @@index([runId])
+    @@index([runId, status])
+    @@map("broadcast_run_recipients")
+}
+
+enum BroadcastStatus {
+    DRAFT
+    RUNNING
+    COMPLETED
+    STOPPED
+}
+
+enum RecipientStatus {
+    PENDING
+    SENT
+    FAILED
+}
+
+enum RunStatus {
+    COMPLETED
+    STOPPED
+}

@@ -153,6 +153,21 @@ export const ENDPOINT = {
             start: { path: "start" },
             verify: { path: "verify" },
         },
+        broadcast: {
+            path: "broadcast",
+            message: { path: "message" },
+            channels: {
+                path: "channels",
+                search: { path: "search" },
+            },
+            progress: {
+                path: "progress",
+                recipients: { path: "recipients" },
+            },
+            history: { path: "history" },
+            start: { path: "start" },
+            stop: { path: "stop" },
+        },
     },
     resetPasswordToken: {
         path: "reset-password-token",

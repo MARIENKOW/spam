@@ -20,6 +20,7 @@ export * from "./schema/blog/video/BlogVideoSchema";
 export * from "./schema/blog/image/BlogImageSchema";
 export * from "./schema/blog/Blog.schema";
 export * from "./schema/tg-account/TgAccount.schema";
+export * from "./schema/broadcast/BroadcastSchema";
 
 export * from "./types";
 export * from "./constants";

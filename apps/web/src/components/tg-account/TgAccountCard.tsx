@@ -7,6 +7,7 @@ import {
     Box,
     Card,
     CardContent,
+    Chip,
     IconButton,
     MenuProps,
     Tooltip,
@@ -16,6 +17,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import StarIcon from "@mui/icons-material/Star";
 import StarPurple500Icon from "@mui/icons-material/StarPurple500";
+import CampaignIcon from "@mui/icons-material/Campaign";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ClientDate } from "@/components/common/ClientDate";
@@ -26,6 +28,8 @@ import { StyledMenu } from "@/components/ui/StyledMenu";
 import { StyledMenuItem } from "@/components/ui/StyledMenuItem";
 import { StyledListItemIcon } from "@/components/ui/StyledListItemIcon";
 import { useConfirm } from "@/hooks/useConfirm";
+import { Link } from "@/i18n/navigation";
+import { FULL_PATH_ROUTE } from "@myorg/shared/route";
 
 const TG_AVATAR_COLORS = [
     "#E17076",
@@ -62,6 +66,8 @@ export default function TgAccountCard({ account, showOwner }: Props) {
     const avatarColor = getAvatarColor(account.telegramId);
     const initials = getInitials(account.firstName, account.lastName);
     const fullName = [account.firstName, account.lastName].filter(Boolean).join(" ");
+
+    const broadcastHref = `${FULL_PATH_ROUTE.admin.tgAccounts.path}/${account.id}/broadcast`;
 
     const handleDelete = async () => {
         setAnchorEl(null);
@@ -140,6 +146,16 @@ export default function TgAccountCard({ account, showOwner }: Props) {
                     onClose={() => setAnchorEl(null)}
                     anchorEl={anchorEl}
                 >
+                    <Link href={broadcastHref} style={{ textDecoration: "none", color: "inherit" }}>
+                        <StyledMenuItem onClick={() => setAnchorEl(null)}>
+                            <StyledListItemIcon>
+                                <CampaignIcon color="primary" />
+                            </StyledListItemIcon>
+                            <StyledTypography>
+                                {t("pages.admin.tgAccounts.broadcast.name")}
+                            </StyledTypography>
+                        </StyledMenuItem>
+                    </Link>
                     <StyledMenuItem onClick={handleDelete} disabled={isPending}>
                         <StyledListItemIcon>
                             <DeleteForeverIcon color="error" />
@@ -179,13 +195,41 @@ export default function TgAccountCard({ account, showOwner }: Props) {
                     </Box>
                 )}
 
-                <Box mt={1.5}>
+                <Box mt={1.5} display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
                     <ClientDate
                         date={account.createdAt}
                         format={(date, locale) => t("pages.admin.tgAccounts.added", { time: relativeTime({ date, locale }) })}
                         variant="caption"
                         color="text.disabled"
                     />
+                    {account.broadcastStatus === "RUNNING" && account.broadcastProgress ? (
+                        <Link href={broadcastHref} style={{ textDecoration: "none" }}>
+                            <Chip
+                                size="small"
+                                icon={<CampaignIcon sx={{ fontSize: "14px !important" }} />}
+                                label={t("pages.admin.tgAccounts.broadcast.progress", {
+                                    sent: account.broadcastProgress.sent,
+                                    total: account.broadcastProgress.total,
+                                })}
+                                color="warning"
+                                variant="outlined"
+                                clickable
+                                sx={{ fontSize: 11 }}
+                            />
+                        </Link>
+                    ) : account.broadcastRunCount > 0 ? (
+                        <Link href={broadcastHref} style={{ textDecoration: "none" }}>
+                            <Chip
+                                size="small"
+                                icon={<CampaignIcon sx={{ fontSize: "14px !important" }} />}
+                                label={t("pages.admin.tgAccounts.broadcast.runs", { count: account.broadcastRunCount })}
+                                color="default"
+                                variant="outlined"
+                                clickable
+                                sx={{ fontSize: 11 }}
+                            />
+                        </Link>
+                    ) : null}
                 </Box>
             </CardContent>
         </Card>

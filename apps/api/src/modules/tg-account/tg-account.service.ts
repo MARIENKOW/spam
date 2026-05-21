@@ -37,6 +37,14 @@ const PENDING_AUTH_TTL_MS = 10 * 60 * 1000;
 const ADMIN_INCLUDE = {
     admin: { select: { email: true, role: true } },
     photo: { select: { filename: true } },
+    broadcast: {
+        select: {
+            id: true,
+            status: true,
+            startedAt: true,
+            _count: { select: { runs: true } },
+        },
+    },
 } as const;
 
 @Injectable()
@@ -220,8 +228,34 @@ export class TgAccountService implements OnModuleDestroy {
             this.prisma.tgAccount.count({ where }),
         ]);
 
+        // Batch fetch progress for RUNNING broadcasts
+        const runningBroadcastIds = data
+            .filter((a) => a.broadcast?.status === "RUNNING")
+            .map((a) => a.broadcast!.id)
+            .filter(Boolean) as string[];
+
+        const progressMap = new Map<string, { sent: number; total: number }>();
+
+        if (runningBroadcastIds.length > 0) {
+            // Get broadcast IDs from tgAccountId mapping
+            const broadcasts = await this.prisma.broadcast.findMany({
+                where: { tgAccountId: { in: data.map((a) => a.id) }, status: "RUNNING" },
+                select: { id: true, tgAccountId: true },
+            });
+
+            await Promise.all(
+                broadcasts.map(async (b) => {
+                    const [sent, total] = await Promise.all([
+                        this.prisma.broadcastRecipient.count({ where: { broadcastId: b.id, status: "SENT" } }),
+                        this.prisma.broadcastRecipient.count({ where: { broadcastId: b.id } }),
+                    ]);
+                    progressMap.set(b.tgAccountId, { sent, total });
+                }),
+            );
+        }
+
         return {
-            data: data.map(mapTgAccount),
+            data: data.map((a) => mapTgAccount(a, progressMap.get(a.id) ?? null)),
             meta: { page, limit, total, pageCount: Math.ceil(total / limit) },
         };
     }

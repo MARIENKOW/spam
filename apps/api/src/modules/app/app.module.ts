@@ -19,6 +19,7 @@ import { AdminInvitationModule } from "@/modules/admin/invitation/adminInvitatio
 import { AdminManagementModule } from "@/modules/admin/management/adminManagement.module";
 import { UserManagementModule } from "@/modules/admin/userManagement/userManagement.module";
 import { TgAccountModule } from "@/modules/tg-account/tg-account.module";
+import { BroadcastModule } from "@/modules/broadcast/broadcast.module";
 @Module({
     imports: [
         CoreModule,
@@ -35,6 +36,7 @@ import { TgAccountModule } from "@/modules/tg-account/tg-account.module";
         BlogVideoModule,
         BlogModule,
         TgAccountModule,
+        BroadcastModule,
         I18nModule.forRoot({
             loaderOptions: {},
             fallbackLanguage: defaultLanguage,

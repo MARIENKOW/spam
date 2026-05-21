@@ -3,7 +3,10 @@ import { TgAccountRecord } from "@/modules/tg-account/tg-account.types";
 import { FileEntityType } from "@/generated/prisma";
 import { buildFileUrl } from "@/infrastructure/file/file.utils";
 
-export const mapTgAccount = (account: TgAccountRecord): TgAccountDto => ({
+export const mapTgAccount = (
+    account: TgAccountRecord,
+    broadcastProgress: { sent: number; total: number } | null = null,
+): TgAccountDto => ({
     id: account.id,
     phone: account.phone,
     telegramId: account.telegramId,
@@ -18,4 +21,7 @@ export const mapTgAccount = (account: TgAccountRecord): TgAccountDto => ({
     createdAt: account.createdAt.toISOString(),
     adminEmail: account.admin.email,
     adminRole: account.admin.role as "ADMIN" | "SUPERADMIN",
+    broadcastStatus: account.broadcast?.status ?? null,
+    broadcastProgress: account.broadcast?.status === "RUNNING" ? broadcastProgress : null,
+    broadcastRunCount: account.broadcast?._count.runs ?? 0,
 });

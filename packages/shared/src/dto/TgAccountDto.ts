@@ -13,6 +13,9 @@ export interface TgAccountDto {
     createdAt: string;
     adminEmail: string;
     adminRole: "ADMIN" | "SUPERADMIN";
+    broadcastStatus: "DRAFT" | "RUNNING" | "COMPLETED" | "STOPPED" | null;
+    broadcastProgress: { sent: number; total: number } | null;
+    broadcastRunCount: number;
 }
 
 export interface TgAccountStartResponseDto {

@@ -13,3 +13,4 @@ export * from "./AdminInvitationAcceptDto";
 export * from "./AdminManagementDto";
 export * from "./UserManagementDto";
 export * from "./TgAccountDto";
+export * from "./BroadcastDto";
