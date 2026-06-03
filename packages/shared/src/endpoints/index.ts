@@ -146,12 +146,21 @@ export const ENDPOINT = {
             upload: { path: "upload" },
         },
     },
+    tgMessenger: {
+        path: "tg-messenger",
+        dialogs: { path: "dialogs" },
+        messages: { path: "messages" },
+    },
     tgAccount: {
         path: "tg-accounts",
         auth: {
             path: "auth",
             start: { path: "start" },
             verify: { path: "verify" },
+            qr: {
+                path: "qr",
+                start: { path: "start" },
+            },
         },
         broadcast: {
             path: "broadcast",

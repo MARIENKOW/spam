@@ -2,6 +2,7 @@ import { GlobalExceptionFilter } from "@/common/filters/global.exception.filter"
 import { env } from "@/config";
 import { AppModule } from "@/modules/app/app.module";
 import { NestFactory } from "@nestjs/core";
+import { IoAdapter } from "@nestjs/platform-socket.io";
 import cookieParser from "cookie-parser";
 
 
@@ -10,6 +11,7 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     app.setGlobalPrefix(env.NEXT_PUBLIC_API_GLOBAL_PREFIX);
     app.useGlobalFilters(new GlobalExceptionFilter());
+    app.useWebSocketAdapter(new IoAdapter(app));
     app.use(cookieParser());
     app.enableCors({
         origin: env.ALLOWED_ORIGIN,

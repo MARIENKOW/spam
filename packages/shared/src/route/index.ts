@@ -47,6 +47,9 @@ export const ROUTE = {
             add: { path: "add" },
             broadcast: { path: "broadcast" },
         },
+        messenger: {
+            path: "messenger",
+        },
     },
 } as const;
 

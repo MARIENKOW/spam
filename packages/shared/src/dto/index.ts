@@ -14,3 +14,4 @@ export * from "./AdminManagementDto";
 export * from "./UserManagementDto";
 export * from "./TgAccountDto";
 export * from "./BroadcastDto";
+export * from "./MessengerDto";

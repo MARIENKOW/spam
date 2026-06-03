@@ -5,6 +5,7 @@ import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import PeopleIcon from "@mui/icons-material/People";
 import PersonIcon from "@mui/icons-material/Person";
 import SendToMobileIcon from "@mui/icons-material/SendToMobile";
+import ChatIcon from "@mui/icons-material/Chat";
 import { AdminDto } from "@myorg/shared/dto";
 
 export const NAV_GROUPS: (role: AdminDto["role"]) => NavGroup[] = (role) => [
@@ -30,6 +31,14 @@ export const NAV_GROUPS: (role: AdminDto["role"]) => NavGroup[] = (role) => [
                     safe: [FULL_PATH_ROUTE.admin.tgAccounts.path],
                 },
                 icon: <SendToMobileIcon />,
+            },
+            {
+                label: "pages.admin.messenger.name",
+                href: FULL_PATH_ROUTE.admin.messenger.path,
+                activeLink: {
+                    safe: [FULL_PATH_ROUTE.admin.messenger.path],
+                },
+                icon: <ChatIcon />,
             },
         ],
     },

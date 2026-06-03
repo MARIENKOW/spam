@@ -1,6 +1,14 @@
 import { Auth, CurrentActor } from "@/modules/auth/decorators/auth.decorator";
 import { AdminActor } from "@/modules/auth/auth.type";
-import { TgAccountDto, TgAccountStartResponseDto, TgAccountVerifyResponseDto, PagedResult } from "@myorg/shared/dto";
+import {
+    TgAccountDto,
+    TgAccountStartResponseDto,
+    TgAccountVerifyResponseDto,
+    TgAccountQrStartResponseDto,
+    TgAccountQrPollResponseDto,
+    TgAccountQrVerify2faResponseDto,
+    PagedResult,
+} from "@myorg/shared/dto";
 import { ENDPOINT, FULL_PATH_ENDPOINT } from "@myorg/shared/endpoints";
 import { TgAccountStartSchema, TgAccountStartOutput, TgAccountVerifySchema, TgAccountVerifyOutput } from "@myorg/shared/form";
 import {
@@ -19,6 +27,7 @@ import { ZodValidationPipe } from "@/common/pipe/zod-validation";
 
 const { path } = FULL_PATH_ENDPOINT.tgAccount;
 const { auth } = ENDPOINT.tgAccount;
+const QR = `${auth.path}/${auth.qr.path}`;
 
 @Controller(path)
 export class TgAccountController {
@@ -40,6 +49,42 @@ export class TgAccountController {
         @CurrentActor() actor: AdminActor,
     ): Promise<TgAccountVerifyResponseDto> {
         return this.tgAccount.authVerify(body.phone, body.phoneCodeHash, body.code, actor.admin.id, body.password);
+    }
+
+    @Post(`${QR}/${auth.qr.start.path}`)
+    @Auth("ADMIN")
+    async qrStart(
+        @CurrentActor() actor: AdminActor,
+    ): Promise<TgAccountQrStartResponseDto> {
+        return this.tgAccount.qrStart(actor.admin.id);
+    }
+
+    @Get(`${QR}/:sessionId`)
+    @Auth("ADMIN")
+    async qrPoll(
+        @Param("sessionId") sessionId: string,
+        @CurrentActor() actor: AdminActor,
+    ): Promise<TgAccountQrPollResponseDto> {
+        return this.tgAccount.qrPoll(sessionId, actor.admin.id);
+    }
+
+    @Post(`${QR}/:sessionId/verify2fa`)
+    @Auth("ADMIN")
+    async qrVerify2fa(
+        @Param("sessionId") sessionId: string,
+        @Body() body: { password: string },
+        @CurrentActor() actor: AdminActor,
+    ): Promise<TgAccountQrVerify2faResponseDto> {
+        return this.tgAccount.qrVerify2fa(sessionId, body.password, actor.admin.id);
+    }
+
+    @Delete(`${QR}/:sessionId`)
+    @Auth("ADMIN")
+    async qrCancel(
+        @Param("sessionId") sessionId: string,
+        @CurrentActor() actor: AdminActor,
+    ): Promise<void> {
+        return this.tgAccount.qrCancel(sessionId, actor.admin.id);
     }
 
     @Get()

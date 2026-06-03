@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Collapse } from "@mui/material";
+import { Box, Collapse, Tab, Tabs } from "@mui/material";
+import PhoneAndroidIcon from "@mui/icons-material/PhoneAndroid";
+import QrCodeIcon from "@mui/icons-material/QrCode";
 import { useRouter } from "@/i18n/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -12,15 +14,18 @@ import TgAccountStepper from "./TgAccountAddForm/ui/TgAccountStepper";
 import PhoneStep from "./TgAccountAddForm/steps/PhoneStep";
 import CodeStep from "./TgAccountAddForm/steps/CodeStep";
 import PasswordStep from "./TgAccountAddForm/steps/PasswordStep";
+import QrStep from "./TgAccountAddForm/steps/QrStep";
 
-type Step = 0 | 1 | 2;
+type AuthMode = "phone" | "qr";
+type PhoneStep = 0 | 1 | 2;
 
 export default function TgAccountAddForm() {
     const t = useTranslations();
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    const [step, setStep] = useState<Step>(0);
+    const [mode, setMode] = useState<AuthMode>("phone");
+    const [step, setStep] = useState<PhoneStep>(0);
     const [phone, setPhone] = useState("");
     const [phoneCodeHash, setPhoneCodeHash] = useState("");
     const [code, setCode] = useState("");
@@ -48,10 +53,43 @@ export default function TgAccountAddForm() {
         setStep(2);
     };
 
+    const handleModeChange = (_: React.SyntheticEvent, newMode: AuthMode) => {
+        if (newMode === mode) return;
+        setMode(newMode);
+        setStep(0);
+        setPhone("");
+        setPhoneCodeHash("");
+        setCode("");
+    };
+
     return (
         <Box display={"flex"} flexDirection={"column"} flex={1}>
             <Box mb={7}>
-                <TgAccountStepper activeStep={step} />
+                <Tabs
+                    value={mode}
+                    onChange={handleModeChange}
+                    centered
+                    sx={{ mb: mode === "phone" ? 0 : -4 }}
+                >
+                    <Tab
+                        value="phone"
+                        label={t("pages.admin.tgAccounts.add.method.phone")}
+                        icon={<PhoneAndroidIcon fontSize="small" />}
+                        iconPosition="start"
+                    />
+                    <Tab
+                        value="qr"
+                        label={t("pages.admin.tgAccounts.add.method.qr")}
+                        icon={<QrCodeIcon fontSize="small" />}
+                        iconPosition="start"
+                    />
+                </Tabs>
+
+                {mode === "phone" && (
+                    <Box mt={4}>
+                        <TgAccountStepper activeStep={step} />
+                    </Box>
+                )}
             </Box>
 
             <Box
@@ -64,27 +102,38 @@ export default function TgAccountAddForm() {
                 maxWidth={400}
                 mx="auto"
             >
-                <Collapse in={step === 0} unmountOnExit>
-                    <PhoneStep onSuccess={handlePhoneSuccess} />
-                </Collapse>
+                {mode === "phone" && (
+                    <>
+                        <Collapse in={step === 0} unmountOnExit>
+                            <PhoneStep onSuccess={handlePhoneSuccess} />
+                        </Collapse>
 
-                <Collapse in={step === 1} unmountOnExit>
-                    <CodeStep
-                        phone={phone}
-                        phoneCodeHash={phoneCodeHash}
-                        onSuccess={afterSuccess}
-                        onRequires2FA={handleRequires2FA}
-                    />
-                </Collapse>
+                        <Collapse in={step === 1} unmountOnExit>
+                            <CodeStep
+                                phone={phone}
+                                phoneCodeHash={phoneCodeHash}
+                                onSuccess={afterSuccess}
+                                onRequires2FA={handleRequires2FA}
+                            />
+                        </Collapse>
 
-                <Collapse in={step === 2} unmountOnExit>
-                    <PasswordStep
-                        phone={phone}
-                        phoneCodeHash={phoneCodeHash}
-                        code={code}
+                        <Collapse in={step === 2} unmountOnExit>
+                            <PasswordStep
+                                phone={phone}
+                                phoneCodeHash={phoneCodeHash}
+                                code={code}
+                                onSuccess={afterSuccess}
+                            />
+                        </Collapse>
+                    </>
+                )}
+
+                {mode === "qr" && (
+                    <QrStep
                         onSuccess={afterSuccess}
+                        onSwitchToPhone={() => handleModeChange({} as any, "phone")}
                     />
-                </Collapse>
+                )}
             </Box>
         </Box>
     );

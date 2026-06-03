@@ -2,6 +2,9 @@ import {
     TgAccountDto,
     TgAccountStartResponseDto,
     TgAccountVerifyResponseDto,
+    TgAccountQrStartResponseDto,
+    TgAccountQrPollResponseDto,
+    TgAccountQrVerify2faResponseDto,
     PagedResult,
 } from "@myorg/shared/dto";
 import { ENDPOINT, FULL_PATH_ENDPOINT } from "@myorg/shared/endpoints";
@@ -12,10 +15,15 @@ import { TgAccountParams } from "@/lib/tanstack/listDefaults";
 
 const { path } = FULL_PATH_ENDPOINT.tgAccount;
 const { auth } = ENDPOINT.tgAccount;
+const QR_BASE = `${path}/${auth.path}/${auth.qr.path}`;
 
 export default class TgAccountService {
     authStart: (body: TgAccountStartOutput) => FetchCustomReturn<TgAccountStartResponseDto>;
     authVerify: (body: TgAccountVerifyOutput) => FetchCustomReturn<TgAccountVerifyResponseDto>;
+    qrStart: () => FetchCustomReturn<TgAccountQrStartResponseDto>;
+    qrPoll: (sessionId: string) => FetchCustomReturn<TgAccountQrPollResponseDto>;
+    qrVerify2fa: (sessionId: string, password: string) => FetchCustomReturn<TgAccountQrVerify2faResponseDto>;
+    qrCancel: (sessionId: string) => FetchCustomReturn<void>;
     getAll: (params: TgAccountParams) => FetchCustomReturn<PagedResult<TgAccountDto>>;
     delete: (id: string) => FetchCustomReturn<void>;
 
@@ -33,6 +41,26 @@ export default class TgAccountService {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body),
             });
+
+        this.qrStart = () =>
+            api<TgAccountQrStartResponseDto>(`${QR_BASE}/${auth.qr.start.path}`, {
+                method: "POST",
+            });
+
+        this.qrPoll = (sessionId) =>
+            api<TgAccountQrPollResponseDto>(`${QR_BASE}/${sessionId}`, {
+                method: "GET",
+            });
+
+        this.qrVerify2fa = (sessionId, password) =>
+            api<TgAccountQrVerify2faResponseDto>(`${QR_BASE}/${sessionId}/verify2fa`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password }),
+            });
+
+        this.qrCancel = (sessionId) =>
+            api<void>(`${QR_BASE}/${sessionId}`, { method: "DELETE" });
 
         this.getAll = (params) => {
             const query = toSearchParams(params);

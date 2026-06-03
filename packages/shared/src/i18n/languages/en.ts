@@ -349,10 +349,17 @@ export const en: MessageStructure = {
                     unrevoked: "Invitation restored",
                 },
             },
+            messenger: {
+                name: "Messenger",
+            },
             tgAccounts: {
                 name: "TG Accounts",
                 add: {
                     name: "Add account",
+                    method: {
+                        phone: "Phone number",
+                        qr: "QR code",
+                    },
                     steps: {
                         phone: "Phone number",
                         code: "Confirmation code",
@@ -362,6 +369,16 @@ export const en: MessageStructure = {
                         phone: "Enter the phone number linked to your Telegram account",
                         code: "Telegram has sent a code to your account",
                         password: "This account is protected by two-factor authentication",
+                    },
+                    qr: {
+                        hint: "Open Telegram on your phone and scan this code to log in",
+                        waiting: "Waiting for scan...",
+                        expired: "QR code has expired. Generate a new one.",
+                        retry: "Generate new QR code",
+                        scanning: "Scan detected, completing login...",
+                        needs2faHint: "This account requires a 2FA cloud password",
+                        switchToPhone: "Use phone number instead",
+                        error: "Something went wrong. Try again.",
                     },
                 },
                 status: {
