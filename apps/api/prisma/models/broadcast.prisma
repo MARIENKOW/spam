@@ -98,9 +98,11 @@ enum RecipientStatus {
     PENDING
     SENT
     FAILED
+    CANCELLED
 }
 
 enum RunStatus {
+    RUNNING
     COMPLETED
     STOPPED
 }

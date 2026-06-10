@@ -48,6 +48,7 @@ export class BroadcastTgService {
 
                 channels.push({
                     telegramId: chat.id.toString(),
+                    accessHash: chat.accessHash?.toString() ?? null,
                     username: chat.username ?? null,
                     title: chat.title,
                     photoBase64,

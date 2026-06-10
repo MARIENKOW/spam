@@ -16,6 +16,8 @@ model TgAccount {
     admin         Admin           @relation(fields: [adminId], references: [id])
 
     broadcast     Broadcast?
+    invite        Invite?
+    ownedChannels TgOwnedChannel[]
 
     @@index([status])
     @@index([adminId])

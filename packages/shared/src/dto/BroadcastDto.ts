@@ -1,5 +1,5 @@
 export type BroadcastStatus = "DRAFT" | "RUNNING" | "COMPLETED" | "STOPPED";
-export type RecipientStatus = "PENDING" | "SENT" | "FAILED";
+export type RecipientStatus = "PENDING" | "SENT" | "FAILED" | "CANCELLED";
 export type RunStatus = "COMPLETED" | "STOPPED";
 
 export interface BroadcastChannelDto {
@@ -71,6 +71,7 @@ export interface BroadcastDto {
 
 export interface ChannelSearchResultDto {
     telegramId: string;
+    accessHash: string | null;
     username: string | null;
     title: string;
     photoBase64: string | null;

@@ -16,6 +16,10 @@ export interface TgAccountDto {
     broadcastStatus: "DRAFT" | "RUNNING" | "COMPLETED" | "STOPPED" | null;
     broadcastProgress: { sent: number; total: number } | null;
     broadcastRunCount: number;
+    inviteStatus: "DRAFT" | "RUNNING" | "COMPLETED" | "STOPPED" | null;
+    inviteProgress: { invited: number; failed: number; total: number } | null;
+    inviteRunCount: number;
+    ownedChannelsCount: number;
 }
 
 export interface TgAccountStartResponseDto {

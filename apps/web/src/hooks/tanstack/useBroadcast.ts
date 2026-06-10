@@ -15,6 +15,7 @@ export function useBroadcast(accountId: string) {
         refetchInterval: (query) => {
             const data = query.state.data;
             if (!data) return false;
+            if (data.status === "RUNNING") return 5_000;
             if (data.channels.some((c) => c.recipientCount === null)) return 3_000;
             return false;
         },

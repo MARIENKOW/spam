@@ -5,6 +5,7 @@ import {
     TgAccountQrStartResponseDto,
     TgAccountQrPollResponseDto,
     TgAccountQrVerify2faResponseDto,
+    TgOwnedChannelDto,
     PagedResult,
 } from "@myorg/shared/dto";
 import { ENDPOINT, FULL_PATH_ENDPOINT } from "@myorg/shared/endpoints";
@@ -25,6 +26,9 @@ export default class TgAccountService {
     qrVerify2fa: (sessionId: string, password: string) => FetchCustomReturn<TgAccountQrVerify2faResponseDto>;
     qrCancel: (sessionId: string) => FetchCustomReturn<void>;
     getAll: (params: TgAccountParams) => FetchCustomReturn<PagedResult<TgAccountDto>>;
+    getOne: (id: string) => FetchCustomReturn<TgAccountDto>;
+    getOwnedChannels: (id: string) => FetchCustomReturn<TgOwnedChannelDto[]>;
+    syncOwnedChannels: (id: string) => FetchCustomReturn<TgOwnedChannelDto[]>;
     delete: (id: string) => FetchCustomReturn<void>;
 
     constructor(api: FetchCustom) {
@@ -68,6 +72,15 @@ export default class TgAccountService {
                 method: "GET",
             });
         };
+
+        this.getOne = (id) =>
+            api<TgAccountDto>(`${path}/${id}`, { method: "GET" });
+
+        this.getOwnedChannels = (id) =>
+            api<TgOwnedChannelDto[]>(`${path}/${id}/owned-channels`, { method: "GET" });
+
+        this.syncOwnedChannels = (id) =>
+            api<TgOwnedChannelDto[]>(`${path}/${id}/owned-channels/sync`, { method: "POST" });
 
         this.delete = (id) => api<void>(`${path}/${id}`, { method: "DELETE" });
     }

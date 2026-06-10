@@ -77,6 +77,14 @@ const ADMIN_INCLUDE = {
             _count: { select: { runs: true } },
         },
     },
+    invite: {
+        select: {
+            id: true,
+            status: true,
+            _count: { select: { runs: true } },
+        },
+    },
+    _count: { select: { ownedChannels: true } },
 } as const;
 
 @Injectable()
@@ -647,7 +655,7 @@ export class TgAccountService implements OnModuleDestroy {
             .map((a) => a.broadcast!.id)
             .filter(Boolean) as string[];
 
-        const progressMap = new Map<string, { sent: number; total: number }>();
+        const broadcastProgressMap = new Map<string, { sent: number; total: number }>();
 
         if (runningBroadcastIds.length > 0) {
             const broadcasts = await this.prisma.broadcast.findMany({
@@ -668,17 +676,55 @@ export class TgAccountService implements OnModuleDestroy {
                             where: { broadcastId: b.id },
                         }),
                     ]);
-                    progressMap.set(b.tgAccountId, { sent, total });
+                    broadcastProgressMap.set(b.tgAccountId, { sent, total });
+                }),
+            );
+        }
+
+        const inviteProgressMap = new Map<string, { invited: number; failed: number; total: number }>();
+
+        const runningInvites = data.filter((a) => a.invite?.status === "RUNNING");
+        if (runningInvites.length > 0) {
+            await Promise.all(
+                runningInvites.map(async (a) => {
+                    const [sent, pending, failed] = await Promise.all([
+                        this.prisma.inviteRecipient.count({ where: { inviteId: a.invite!.id, status: "SENT" } }),
+                        this.prisma.inviteRecipient.count({ where: { inviteId: a.invite!.id, status: "PENDING" } }),
+                        this.prisma.inviteRecipient.count({ where: { inviteId: a.invite!.id, status: "FAILED" } }),
+                    ]);
+                    inviteProgressMap.set(a.id, { invited: sent, failed, total: sent + pending + failed });
                 }),
             );
         }
 
         return {
             data: data.map((a) =>
-                mapTgAccount(a, progressMap.get(a.id) ?? null),
+                mapTgAccount(a, broadcastProgressMap.get(a.id) ?? null, inviteProgressMap.get(a.id) ?? null),
             ),
             meta: { page, limit, total, pageCount: Math.ceil(total / limit) },
         };
+    }
+
+    async getOne(id: string, adminId: string, role: RoleAdmin): Promise<TgAccountDto> {
+        const account = await this.prisma.tgAccount.findUnique({
+            where: { id },
+            include: ADMIN_INCLUDE,
+        });
+        if (!account) throw new NotFoundException("tgAccount.notFound");
+        if (role === "ADMIN" && account.adminId !== adminId)
+            throw new ForbiddenException("tgAccount.notAllowed");
+
+        let inviteProgress: { invited: number; failed: number; total: number } | null = null;
+        if (account.invite?.status === "RUNNING") {
+            const [sent, pending, failed] = await Promise.all([
+                this.prisma.inviteRecipient.count({ where: { inviteId: account.invite.id, status: "SENT" } }),
+                this.prisma.inviteRecipient.count({ where: { inviteId: account.invite.id, status: "PENDING" } }),
+                this.prisma.inviteRecipient.count({ where: { inviteId: account.invite.id, status: "FAILED" } }),
+            ]);
+            inviteProgress = { invited: sent, failed, total: sent + pending + failed };
+        }
+
+        return mapTgAccount(account, null, inviteProgress);
     }
 
     async delete(id: string, adminId: string, role: RoleAdmin): Promise<void> {

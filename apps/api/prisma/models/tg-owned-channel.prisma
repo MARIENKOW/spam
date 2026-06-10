@@ -1,0 +1,17 @@
+model TgOwnedChannel {
+    id          String   @id @default(uuid())
+    telegramId  String
+    accessHash  String
+    title       String
+    username    String?
+    photoBase64 String?
+    memberCount Int?
+    updatedAt   DateTime @updatedAt
+
+    tgAccountId String
+    tgAccount   TgAccount @relation(fields: [tgAccountId], references: [id], onDelete: Cascade)
+
+    @@unique([tgAccountId, telegramId])
+    @@index([tgAccountId])
+    @@map("tg_owned_channels")
+}

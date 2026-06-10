@@ -20,6 +20,7 @@ import { AdminManagementModule } from "@/modules/admin/management/adminManagemen
 import { UserManagementModule } from "@/modules/admin/userManagement/userManagement.module";
 import { TgAccountModule } from "@/modules/tg-account/tg-account.module";
 import { BroadcastModule } from "@/modules/broadcast/broadcast.module";
+import { InviteModule } from "@/modules/invite/invite.module";
 import { TgClientManagerModule } from "@/modules/tg-client-manager/tg-client-manager.module";
 import { TgMessengerModule } from "@/modules/tg-messenger/tg-messenger.module";
 @Module({
@@ -40,6 +41,7 @@ import { TgMessengerModule } from "@/modules/tg-messenger/tg-messenger.module";
         TgClientManagerModule,
         TgAccountModule,
         BroadcastModule,
+        InviteModule,
         TgMessengerModule,
         I18nModule.forRoot({
             loaderOptions: {},

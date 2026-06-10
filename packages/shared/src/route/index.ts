@@ -46,6 +46,10 @@ export const ROUTE = {
             path: "tg-accounts",
             add: { path: "add" },
             broadcast: { path: "broadcast" },
+            account: {
+                path: "[id]",
+                invite: { path: "invite" },
+            },
         },
         messenger: {
             path: "messenger",

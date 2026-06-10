@@ -1,4 +1,4 @@
-import { Admin, Broadcast, Image, TgAccount } from "@/generated/prisma";
+import { Admin, Broadcast, Image, Invite, TgAccount } from "@/generated/prisma";
 
 export type TgAccountRecord = TgAccount & {
     admin: Pick<Admin, "email" | "role">;
@@ -6,4 +6,8 @@ export type TgAccountRecord = TgAccount & {
     broadcast: (Pick<Broadcast, "id" | "status" | "startedAt"> & {
         _count: { runs: number };
     }) | null;
+    invite: (Pick<Invite, "id" | "status"> & {
+        _count: { runs: number };
+    }) | null;
+    _count: { ownedChannels: number };
 };

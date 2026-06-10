@@ -1,0 +1,106 @@
+model Invite {
+    id                      String       @id @default(uuid())
+    tgAccountId             String       @unique
+    tgAccount               TgAccount    @relation(fields: [tgAccountId], references: [id], onDelete: Cascade)
+    status                  InviteStatus @default(DRAFT)
+    targetChannelTelegramId String?
+    targetChannelAccessHash String?
+    targetChannelTitle      String?
+    targetChannelUsername   String?
+    targetChannelPhoto      String?
+    startedAt               DateTime?
+    completedAt             DateTime?
+    createdAt               DateTime     @default(now())
+    updatedAt               DateTime     @updatedAt
+
+    channels   InviteChannel[]
+    recipients InviteRecipient[]
+    runs       InviteRun[]
+
+    @@map("invites")
+}
+
+model InviteChannel {
+    id             String  @id @default(uuid())
+    inviteId       String
+    invite         Invite  @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+    telegramId     String
+    accessHash     String?
+    username       String?
+    title          String
+    photoUrl       String?
+    memberCount    Int?
+    recipientCount Int?
+    giftCount      Int?
+    fetchError     String?
+
+    @@unique([inviteId, telegramId])
+    @@index([inviteId])
+    @@map("invite_channels")
+}
+
+model InviteRecipient {
+    id           String          @id @default(uuid())
+    inviteId     String
+    invite       Invite          @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+    userId       String
+    accessHash   String?
+    username     String?
+    firstName    String?
+    lastName     String?
+    status       RecipientStatus @default(PENDING)
+    errorMessage String?
+    errorData    Json?
+    invitedAt    DateTime?
+
+    @@unique([inviteId, userId])
+    @@index([inviteId])
+    @@index([inviteId, status])
+    @@map("invite_recipients")
+}
+
+model InviteRun {
+    id                    String    @id @default(uuid())
+    inviteId              String
+    invite                Invite    @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+    targetChannelSnapshot Json      @default("{}")
+    channelsSnapshot      Json      @default("[]")
+    status                RunStatus
+    invitedCount          Int       @default(0)
+    failedCount           Int       @default(0)
+    pendingCount          Int       @default(0)
+    totalCount            Int       @default(0)
+    startedAt             DateTime
+    finishedAt            DateTime?
+
+    recipients InviteRunRecipient[]
+
+    @@index([inviteId])
+    @@map("invite_runs")
+}
+
+model InviteRunRecipient {
+    id           String          @id @default(uuid())
+    runId        String
+    run          InviteRun       @relation(fields: [runId], references: [id], onDelete: Cascade)
+    userId       String
+    accessHash   String?
+    username     String?
+    firstName    String?
+    lastName     String?
+    status       RecipientStatus
+    errorMessage String?
+    errorData    Json?
+    invitedAt    DateTime?
+
+    @@index([runId])
+    @@index([runId, status])
+    @@map("invite_run_recipients")
+}
+
+enum InviteStatus {
+    DRAFT
+    RUNNING
+    COMPLETED
+    STOPPED
+}

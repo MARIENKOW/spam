@@ -59,6 +59,23 @@ export const tgAccountKeys = {
     all: ["tg-accounts"] as const,
     lists: () => [...tgAccountKeys.all, "list"] as const,
     list: (params: TgAccountParams) => [...tgAccountKeys.lists(), params] as const,
+    detail: (id: string) => [...tgAccountKeys.all, "detail", id] as const,
+    ownedChannels: (id: string) => [...tgAccountKeys.all, "owned-channels", id] as const,
+};
+
+export const inviteKeys = {
+    all: (accountId: string) => ["invite", accountId] as const,
+    detail: (accountId: string) => [...inviteKeys.all(accountId), "detail"] as const,
+    progress: (accountId: string) => [...inviteKeys.all(accountId), "progress"] as const,
+    recipients: (accountId: string, params: object) =>
+        [...inviteKeys.all(accountId), "recipients", params] as const,
+    history: (accountId: string) => [...inviteKeys.all(accountId), "history"] as const,
+    run: (accountId: string, runId: string) =>
+        [...inviteKeys.all(accountId), "run", runId] as const,
+    runRecipients: (runId: string, params: object) =>
+        ["invite-run-recipients", runId, params] as const,
+    channelSearch: (accountId: string, query: string) =>
+        [...inviteKeys.all(accountId), "channel-search", query] as const,
 };
 
 export const broadcastKeys = {

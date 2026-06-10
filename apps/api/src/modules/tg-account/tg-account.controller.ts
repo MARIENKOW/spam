@@ -7,6 +7,7 @@ import {
     TgAccountQrStartResponseDto,
     TgAccountQrPollResponseDto,
     TgAccountQrVerify2faResponseDto,
+    TgOwnedChannelDto,
     PagedResult,
 } from "@myorg/shared/dto";
 import { ENDPOINT, FULL_PATH_ENDPOINT } from "@myorg/shared/endpoints";
@@ -23,6 +24,7 @@ import {
     Query,
 } from "@nestjs/common";
 import { TgAccountService } from "@/modules/tg-account/tg-account.service";
+import { TgOwnedChannelService } from "@/modules/tg-account/tg-owned-channel.service";
 import { ZodValidationPipe } from "@/common/pipe/zod-validation";
 
 const { path } = FULL_PATH_ENDPOINT.tgAccount;
@@ -31,7 +33,10 @@ const QR = `${auth.path}/${auth.qr.path}`;
 
 @Controller(path)
 export class TgAccountController {
-    constructor(private readonly tgAccount: TgAccountService) {}
+    constructor(
+        private readonly tgAccount: TgAccountService,
+        private readonly ownedChannel: TgOwnedChannelService,
+    ) {}
 
     @Post(`${auth.path}/${auth.start.path}`)
     @Auth("ADMIN")
@@ -85,6 +90,33 @@ export class TgAccountController {
         @CurrentActor() actor: AdminActor,
     ): Promise<void> {
         return this.tgAccount.qrCancel(sessionId, actor.admin.id);
+    }
+
+    @Get(":id")
+    @Auth("ADMIN")
+    async getOne(
+        @Param("id") id: string,
+        @CurrentActor() actor: AdminActor,
+    ): Promise<TgAccountDto> {
+        return this.tgAccount.getOne(id, actor.admin.id, actor.role);
+    }
+
+    @Get(":id/owned-channels")
+    @Auth("ADMIN")
+    async getOwnedChannels(
+        @Param("id") id: string,
+        @CurrentActor() actor: AdminActor,
+    ): Promise<TgOwnedChannelDto[]> {
+        return this.ownedChannel.getChannels(id, actor.admin.id, actor.role);
+    }
+
+    @Post(":id/owned-channels/sync")
+    @Auth("ADMIN")
+    async syncOwnedChannels(
+        @Param("id") id: string,
+        @CurrentActor() actor: AdminActor,
+    ): Promise<TgOwnedChannelDto[]> {
+        return this.ownedChannel.syncChannels(id, actor.admin.id, actor.role);
     }
 
     @Get()

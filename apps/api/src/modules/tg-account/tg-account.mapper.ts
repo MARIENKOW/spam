@@ -6,6 +6,7 @@ import { buildFileUrl } from "@/infrastructure/file/file.utils";
 export const mapTgAccount = (
     account: TgAccountRecord,
     broadcastProgress: { sent: number; total: number } | null = null,
+    inviteProgress: { invited: number; failed: number; total: number } | null = null,
 ): TgAccountDto => ({
     id: account.id,
     phone: account.phone,
@@ -24,4 +25,8 @@ export const mapTgAccount = (
     broadcastStatus: account.broadcast?.status ?? null,
     broadcastProgress: account.broadcast?.status === "RUNNING" ? broadcastProgress : null,
     broadcastRunCount: account.broadcast?._count.runs ?? 0,
+    inviteStatus: account.invite?.status ?? null,
+    inviteProgress: account.invite?.status === "RUNNING" ? inviteProgress : null,
+    inviteRunCount: account.invite?._count.runs ?? 0,
+    ownedChannelsCount: account._count?.ownedChannels ?? 0,
 });

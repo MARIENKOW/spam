@@ -8,7 +8,6 @@ import {
     Card,
     CardContent,
     Chip,
-    IconButton,
     MenuProps,
     Tooltip,
     Typography,
@@ -18,6 +17,8 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import StarIcon from "@mui/icons-material/Star";
 import StarPurple500Icon from "@mui/icons-material/StarPurple500";
 import CampaignIcon from "@mui/icons-material/Campaign";
+import GroupAddIcon from "@mui/icons-material/GroupAdd";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ClientDate } from "@/components/common/ClientDate";
@@ -67,7 +68,9 @@ export default function TgAccountCard({ account, showOwner }: Props) {
     const initials = getInitials(account.firstName, account.lastName);
     const fullName = [account.firstName, account.lastName].filter(Boolean).join(" ");
 
+    const accountHref = `${FULL_PATH_ROUTE.admin.tgAccounts.path}/${account.id}`;
     const broadcastHref = `${FULL_PATH_ROUTE.admin.tgAccounts.path}/${account.id}/broadcast`;
+    const inviteHref = `${FULL_PATH_ROUTE.admin.tgAccounts.path}/${account.id}/invite`;
 
     const handleDelete = async () => {
         setAnchorEl(null);
@@ -146,6 +149,16 @@ export default function TgAccountCard({ account, showOwner }: Props) {
                     onClose={() => setAnchorEl(null)}
                     anchorEl={anchorEl}
                 >
+                    <Link href={accountHref} style={{ textDecoration: "none", color: "inherit" }}>
+                        <StyledMenuItem onClick={() => setAnchorEl(null)}>
+                            <StyledListItemIcon>
+                                <AccountCircleIcon color="primary" />
+                            </StyledListItemIcon>
+                            <StyledTypography>
+                                {t("pages.admin.tgAccounts.openAccount")}
+                            </StyledTypography>
+                        </StyledMenuItem>
+                    </Link>
                     <Link href={broadcastHref} style={{ textDecoration: "none", color: "inherit" }}>
                         <StyledMenuItem onClick={() => setAnchorEl(null)}>
                             <StyledListItemIcon>
@@ -195,13 +208,16 @@ export default function TgAccountCard({ account, showOwner }: Props) {
                     </Box>
                 )}
 
-                <Box mt={1.5} display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+                <Box mt={1.5}>
                     <ClientDate
                         date={account.createdAt}
                         format={(date, locale) => t("pages.admin.tgAccounts.added", { time: relativeTime({ date, locale }) })}
                         variant="caption"
                         color="text.disabled"
                     />
+                </Box>
+
+                <Box mt={1} display="flex" flexWrap="wrap" gap={0.75}>
                     {account.broadcastStatus === "RUNNING" && account.broadcastProgress ? (
                         <Link href={broadcastHref} style={{ textDecoration: "none" }}>
                             <Chip
@@ -223,6 +239,34 @@ export default function TgAccountCard({ account, showOwner }: Props) {
                                 size="small"
                                 icon={<CampaignIcon sx={{ fontSize: "14px !important" }} />}
                                 label={t("pages.admin.tgAccounts.broadcast.runs", { count: account.broadcastRunCount })}
+                                color="default"
+                                variant="outlined"
+                                clickable
+                                sx={{ fontSize: 11 }}
+                            />
+                        </Link>
+                    ) : null}
+                    {account.inviteStatus === "RUNNING" && account.inviteProgress ? (
+                        <Link href={inviteHref} style={{ textDecoration: "none" }}>
+                            <Chip
+                                size="small"
+                                icon={<GroupAddIcon sx={{ fontSize: "14px !important" }} />}
+                                label={t("pages.admin.tgAccounts.invite.progress", {
+                                    invited: account.inviteProgress.invited + account.inviteProgress.failed,
+                                    total: account.inviteProgress.total,
+                                })}
+                                color="info"
+                                variant="outlined"
+                                clickable
+                                sx={{ fontSize: 11 }}
+                            />
+                        </Link>
+                    ) : account.inviteRunCount > 0 ? (
+                        <Link href={inviteHref} style={{ textDecoration: "none" }}>
+                            <Chip
+                                size="small"
+                                icon={<GroupAddIcon sx={{ fontSize: "14px !important" }} />}
+                                label={t("pages.admin.tgAccounts.invite.runs", { count: account.inviteRunCount })}
                                 color="default"
                                 variant="outlined"
                                 clickable

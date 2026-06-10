@@ -177,6 +177,26 @@ export const ENDPOINT = {
             start: { path: "start" },
             stop: { path: "stop" },
         },
+        ownedChannels: {
+            path: "owned-channels",
+            sync: { path: "sync" },
+        },
+        invite: {
+            path: "invite",
+            targetChannel: { path: "target-channel" },
+            channels: {
+                path: "channels",
+                search: { path: "search" },
+            },
+            progress: {
+                path: "progress",
+                recipients: { path: "recipients" },
+            },
+            history: { path: "history" },
+            start: { path: "start" },
+            stop: { path: "stop" },
+            reset: { path: "reset" },
+        },
     },
     resetPasswordToken: {
         path: "reset-password-token",
