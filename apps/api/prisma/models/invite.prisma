@@ -8,6 +8,10 @@ model Invite {
     targetChannelTitle      String?
     targetChannelUsername   String?
     targetChannelPhoto      String?
+    delayBaseSeconds        Int          @default(180)
+    delayJitterSeconds      Int          @default(60)
+    nextAttemptAt           DateTime?
+    estimatedFinishAt       DateTime?
     startedAt               DateTime?
     completedAt             DateTime?
     createdAt               DateTime     @default(now())
@@ -51,6 +55,7 @@ model InviteRecipient {
     status       RecipientStatus @default(PENDING)
     errorMessage String?
     errorData    Json?
+    delaySeconds Int?
     invitedAt    DateTime?
 
     @@unique([inviteId, userId])
@@ -66,6 +71,8 @@ model InviteRun {
     targetChannelSnapshot Json      @default("{}")
     channelsSnapshot      Json      @default("[]")
     status                RunStatus
+    delayBaseSeconds      Int       @default(180)
+    delayJitterSeconds    Int       @default(60)
     invitedCount          Int       @default(0)
     failedCount           Int       @default(0)
     pendingCount          Int       @default(0)
@@ -91,6 +98,7 @@ model InviteRunRecipient {
     status       RecipientStatus
     errorMessage String?
     errorData    Json?
+    delaySeconds Int?
     invitedAt    DateTime?
 
     @@index([runId])

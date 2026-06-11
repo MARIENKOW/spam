@@ -74,6 +74,8 @@ const ADMIN_INCLUDE = {
             id: true,
             status: true,
             startedAt: true,
+            nextAttemptAt: true,
+            estimatedFinishAt: true,
             _count: { select: { runs: true } },
         },
     },
@@ -81,6 +83,8 @@ const ADMIN_INCLUDE = {
         select: {
             id: true,
             status: true,
+            nextAttemptAt: true,
+            estimatedFinishAt: true,
             _count: { select: { runs: true } },
         },
     },
@@ -655,7 +659,7 @@ export class TgAccountService implements OnModuleDestroy {
             .map((a) => a.broadcast!.id)
             .filter(Boolean) as string[];
 
-        const broadcastProgressMap = new Map<string, { sent: number; failed: number; total: number }>();
+        const broadcastProgressMap = new Map<string, { sent: number; failed: number; total: number; nextAttemptAt: string | null; estimatedFinishAt: string | null }>();
 
         if (runningBroadcastIds.length > 0) {
             const broadcasts = await this.prisma.broadcast.findMany({
@@ -663,7 +667,7 @@ export class TgAccountService implements OnModuleDestroy {
                     tgAccountId: { in: data.map((a) => a.id) },
                     status: "RUNNING",
                 },
-                select: { id: true, tgAccountId: true },
+                select: { id: true, tgAccountId: true, nextAttemptAt: true, estimatedFinishAt: true },
             });
 
             await Promise.all(
@@ -673,12 +677,18 @@ export class TgAccountService implements OnModuleDestroy {
                         this.prisma.broadcastRecipient.count({ where: { broadcastId: b.id, status: "PENDING" } }),
                         this.prisma.broadcastRecipient.count({ where: { broadcastId: b.id, status: "FAILED" } }),
                     ]);
-                    broadcastProgressMap.set(b.tgAccountId, { sent, failed, total: sent + pending + failed });
+                    broadcastProgressMap.set(b.tgAccountId, {
+                        sent,
+                        failed,
+                        total: sent + pending + failed,
+                        nextAttemptAt: b.nextAttemptAt?.toISOString() ?? null,
+                        estimatedFinishAt: b.estimatedFinishAt?.toISOString() ?? null,
+                    });
                 }),
             );
         }
 
-        const inviteProgressMap = new Map<string, { invited: number; failed: number; total: number }>();
+        const inviteProgressMap = new Map<string, { invited: number; failed: number; total: number; nextAttemptAt: string | null; estimatedFinishAt: string | null }>();
 
         const runningInvites = data.filter((a) => a.invite?.status === "RUNNING");
         if (runningInvites.length > 0) {
@@ -689,7 +699,13 @@ export class TgAccountService implements OnModuleDestroy {
                         this.prisma.inviteRecipient.count({ where: { inviteId: a.invite!.id, status: "PENDING" } }),
                         this.prisma.inviteRecipient.count({ where: { inviteId: a.invite!.id, status: "FAILED" } }),
                     ]);
-                    inviteProgressMap.set(a.id, { invited: sent, failed, total: sent + pending + failed });
+                    inviteProgressMap.set(a.id, {
+                        invited: sent,
+                        failed,
+                        total: sent + pending + failed,
+                        nextAttemptAt: a.invite!.nextAttemptAt?.toISOString() ?? null,
+                        estimatedFinishAt: a.invite!.estimatedFinishAt?.toISOString() ?? null,
+                    });
                 }),
             );
         }
@@ -711,24 +727,36 @@ export class TgAccountService implements OnModuleDestroy {
         if (role === "ADMIN" && account.adminId !== adminId)
             throw new ForbiddenException("tgAccount.notAllowed");
 
-        let inviteProgress: { invited: number; failed: number; total: number } | null = null;
+        let inviteProgress: { invited: number; failed: number; total: number; nextAttemptAt: string | null; estimatedFinishAt: string | null } | null = null;
         if (account.invite?.status === "RUNNING") {
             const [sent, pending, failed] = await Promise.all([
                 this.prisma.inviteRecipient.count({ where: { inviteId: account.invite.id, status: "SENT" } }),
                 this.prisma.inviteRecipient.count({ where: { inviteId: account.invite.id, status: "PENDING" } }),
                 this.prisma.inviteRecipient.count({ where: { inviteId: account.invite.id, status: "FAILED" } }),
             ]);
-            inviteProgress = { invited: sent, failed, total: sent + pending + failed };
+            inviteProgress = {
+                invited: sent,
+                failed,
+                total: sent + pending + failed,
+                nextAttemptAt: account.invite.nextAttemptAt?.toISOString() ?? null,
+                estimatedFinishAt: account.invite.estimatedFinishAt?.toISOString() ?? null,
+            };
         }
 
-        let broadcastProgress: { sent: number; failed: number; total: number } | null = null;
+        let broadcastProgress: { sent: number; failed: number; total: number; nextAttemptAt: string | null; estimatedFinishAt: string | null } | null = null;
         if (account.broadcast?.status === "RUNNING") {
             const [sent, pending, failed] = await Promise.all([
                 this.prisma.broadcastRecipient.count({ where: { broadcastId: account.broadcast.id, status: "SENT" } }),
                 this.prisma.broadcastRecipient.count({ where: { broadcastId: account.broadcast.id, status: "PENDING" } }),
                 this.prisma.broadcastRecipient.count({ where: { broadcastId: account.broadcast.id, status: "FAILED" } }),
             ]);
-            broadcastProgress = { sent, failed, total: sent + pending + failed };
+            broadcastProgress = {
+                sent,
+                failed,
+                total: sent + pending + failed,
+                nextAttemptAt: account.broadcast.nextAttemptAt?.toISOString() ?? null,
+                estimatedFinishAt: account.broadcast.estimatedFinishAt?.toISOString() ?? null,
+            };
         }
 
         return mapTgAccount(account, broadcastProgress, inviteProgress);

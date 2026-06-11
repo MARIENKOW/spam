@@ -19,3 +19,9 @@ export const AddBroadcastChannelSchema = z.object({
     memberCount: z.number().nullable(),
 });
 export type AddBroadcastChannelOutput = z.infer<typeof AddBroadcastChannelSchema>;
+
+export const UpdateBroadcastDelaySchema = z.object({
+    delayBaseSeconds: z.number().int().min(0).max(86400),
+    delayJitterSeconds: z.number().int().min(0).max(86400),
+});
+export type UpdateBroadcastDelayOutput = z.infer<typeof UpdateBroadcastDelaySchema>;

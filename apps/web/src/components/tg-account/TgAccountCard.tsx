@@ -169,6 +169,16 @@ export default function TgAccountCard({ account, showOwner }: Props) {
                             </StyledTypography>
                         </StyledMenuItem>
                     </Link>
+                    <Link href={inviteHref} style={{ textDecoration: "none", color: "inherit" }}>
+                        <StyledMenuItem onClick={() => setAnchorEl(null)}>
+                            <StyledListItemIcon>
+                                <GroupAddIcon color="primary" />
+                            </StyledListItemIcon>
+                            <StyledTypography>
+                                {t("pages.admin.tgAccounts.invite.name")}
+                            </StyledTypography>
+                        </StyledMenuItem>
+                    </Link>
                     <StyledMenuItem onClick={handleDelete} disabled={isPending}>
                         <StyledListItemIcon>
                             <DeleteForeverIcon color="error" />

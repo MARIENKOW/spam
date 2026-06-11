@@ -6,8 +6,10 @@ import {
     useFetchChannelRecipients,
     useRemoveBroadcastChannel,
     useStartBroadcast,
+    useUpdateBroadcastDelay,
     useUpdateBroadcastMessage,
 } from "@/hooks/tanstack/useBroadcastMutations";
+import { DelaySettingsField } from "@/components/common/DelaySettingsField";
 import { BroadcastDto } from "@myorg/shared/dto";
 import {
     Avatar,
@@ -49,6 +51,7 @@ export default function BroadcastDraftView({ accountId, broadcast }: Props) {
     const isFirstRender = useRef(true);
 
     const { mutate: updateMessage } = useUpdateBroadcastMessage(accountId);
+    const { mutate: updateDelay } = useUpdateBroadcastDelay(accountId);
     const { mutate: removeChannel, isPending: isRemoving } = useRemoveBroadcastChannel(accountId);
     const {
         mutate: fetchRecipients,
@@ -112,6 +115,18 @@ export default function BroadcastDraftView({ accountId, broadcast }: Props) {
                     variant="outlined"
                 />
             </Box>
+
+            <DelaySettingsField
+                baseSeconds={broadcast.delayBaseSeconds}
+                jitterSeconds={broadcast.delayJitterSeconds}
+                onSave={(delayBaseSeconds, delayJitterSeconds) => updateDelay({ delayBaseSeconds, delayJitterSeconds })}
+                labels={{
+                    title: t("pages.admin.tgAccounts.broadcast.delay.title"),
+                    base: t("pages.admin.tgAccounts.broadcast.delay.base"),
+                    jitter: t("pages.admin.tgAccounts.broadcast.delay.jitter"),
+                    minutes: t("pages.admin.tgAccounts.broadcast.delay.minutes"),
+                }}
+            />
 
             <Divider />
 

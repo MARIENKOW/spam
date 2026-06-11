@@ -12,6 +12,7 @@ import {
     AddInviteChannelOutput,
     SearchChannelOutput,
     SetInviteTargetChannelOutput,
+    UpdateInviteDelayOutput,
 } from "@myorg/shared/form";
 import { FetchCustom, FetchCustomReturn } from "@/utils/api";
 import { toSearchParams } from "@/utils/toSearchParams";
@@ -25,6 +26,7 @@ function invitePath(accountId: string): string {
 export default class InviteService {
     get: (accountId: string) => FetchCustomReturn<InviteDto>;
     setTargetChannel: (accountId: string, body: SetInviteTargetChannelOutput) => FetchCustomReturn<InviteDto>;
+    updateDelay: (accountId: string, body: UpdateInviteDelayOutput) => FetchCustomReturn<InviteDto>;
     searchChannels: (accountId: string, body: SearchChannelOutput) => FetchCustomReturn<ChannelSearchResultDto[]>;
     addChannel: (accountId: string, body: AddInviteChannelOutput) => FetchCustomReturn<InviteDto>;
     removeChannel: (accountId: string, channelId: string) => FetchCustomReturn<InviteDto>;
@@ -53,6 +55,13 @@ export default class InviteService {
 
         this.setTargetChannel = (accountId, body) =>
             api<InviteDto>(`${invitePath(accountId)}/target-channel`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+
+        this.updateDelay = (accountId, body) =>
+            api<InviteDto>(`${invitePath(accountId)}/delay`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body),

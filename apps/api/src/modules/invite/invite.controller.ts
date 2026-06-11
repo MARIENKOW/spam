@@ -22,6 +22,8 @@ import {
     SearchChannelSchema,
     SetInviteTargetChannelOutput,
     SetInviteTargetChannelSchema,
+    UpdateInviteDelayOutput,
+    UpdateInviteDelaySchema,
 } from "@myorg/shared/form";
 import {
     ChannelSearchResultDto,
@@ -65,6 +67,16 @@ export class InviteController {
     ): Promise<InviteDto> {
         await this.assertAccess(accountId, actor);
         return this.inviteService.setTargetChannel(accountId, body);
+    }
+
+    @Patch("delay")
+    async updateDelay(
+        @Param("accountId") accountId: string,
+        @Body(new ZodValidationPipe(UpdateInviteDelaySchema)) body: UpdateInviteDelayOutput,
+        @CurrentActor() actor: AdminActor,
+    ): Promise<InviteDto> {
+        await this.assertAccess(accountId, actor);
+        return this.inviteService.updateDelaySettings(accountId, body.delayBaseSeconds, body.delayJitterSeconds);
     }
 
     @Post("channels/search")

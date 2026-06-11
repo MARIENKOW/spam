@@ -9,7 +9,7 @@ import { isApiErrorResponse } from "@/helpers/error/error.type.helper";
 import { ApiErrorResponse } from "@myorg/shared/dto";
 import { snackbarSuccess } from "@/utils/snackbar/snackbar.success";
 import { useTranslations } from "next-intl";
-import { AddInviteChannelOutput, SetInviteTargetChannelOutput } from "@myorg/shared/form";
+import { AddInviteChannelOutput, SetInviteTargetChannelOutput, UpdateInviteDelayOutput } from "@myorg/shared/form";
 import { useRouter } from "@/i18n/navigation";
 import { FULL_PATH_ROUTE } from "@myorg/shared/route";
 
@@ -36,6 +36,17 @@ export function useSetInviteTargetChannel(accountId: string) {
             invalidateInvite();
             snackbarSuccess(t("pages.admin.tgAccounts.invite.feedback.targetChannelSet"));
         },
+        onError: (error) => errorHandler({ error, t }),
+    });
+}
+
+export function useUpdateInviteDelay(accountId: string) {
+    const { invalidateInvite } = useInviteCache(accountId);
+    const t = useTranslations();
+
+    return useMutation({
+        mutationFn: (body: UpdateInviteDelayOutput) => service.updateDelay(accountId, body),
+        onSuccess: () => invalidateInvite(),
         onError: (error) => errorHandler({ error, t }),
     });
 }

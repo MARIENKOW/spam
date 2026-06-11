@@ -7,7 +7,9 @@ import {
     useRemoveInviteChannel,
     useSetInviteTargetChannel,
     useStartInvite,
+    useUpdateInviteDelay,
 } from "@/hooks/tanstack/useInviteMutations";
+import { DelaySettingsField } from "@/components/common/DelaySettingsField";
 import { useOwnedChannels } from "@/hooks/tanstack/useTgAccountDetail";
 import { InviteDto } from "@myorg/shared/dto";
 import {
@@ -48,6 +50,7 @@ export default function InviteDraftView({ accountId, invite }: Props) {
 
     const { data: ownedChannels = [] } = useOwnedChannels(accountId);
     const { mutate: setTargetChannel } = useSetInviteTargetChannel(accountId);
+    const { mutate: updateDelay } = useUpdateInviteDelay(accountId);
     const { mutate: removeChannel, isPending: isRemoving } =
         useRemoveInviteChannel(accountId);
     const {
@@ -155,6 +158,18 @@ export default function InviteDraftView({ accountId, invite }: Props) {
                     ))}
                 </StyledTextField>
             </Box>
+
+            <DelaySettingsField
+                baseSeconds={invite.delayBaseSeconds}
+                jitterSeconds={invite.delayJitterSeconds}
+                onSave={(delayBaseSeconds, delayJitterSeconds) => updateDelay({ delayBaseSeconds, delayJitterSeconds })}
+                labels={{
+                    title: t("pages.admin.tgAccounts.invite.delay.title"),
+                    base: t("pages.admin.tgAccounts.invite.delay.base"),
+                    jitter: t("pages.admin.tgAccounts.invite.delay.jitter"),
+                    minutes: t("pages.admin.tgAccounts.invite.delay.minutes"),
+                }}
+            />
 
             <Divider />
 

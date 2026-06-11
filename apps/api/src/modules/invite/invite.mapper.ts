@@ -60,6 +60,8 @@ export const mapInviteRun = (r: InviteRun): InviteRunDto => {
             : null,
         channelsSnapshot: ((r.channelsSnapshot as unknown as InviteChannelDto[]) ?? []),
         status: r.status as InviteRunDto["status"],
+        delayBaseSeconds: r.delayBaseSeconds,
+        delayJitterSeconds: r.delayJitterSeconds,
         invitedCount: r.invitedCount,
         failedCount: r.failedCount,
         pendingCount: r.pendingCount,
@@ -98,6 +100,10 @@ export const mapInviteProgress = (
     total: pending + sent + failed,
     channels: channels.map(mapInviteChannel),
     startedAt: invite.startedAt?.toISOString() ?? null,
+    delayBaseSeconds: invite.delayBaseSeconds,
+    delayJitterSeconds: invite.delayJitterSeconds,
+    nextAttemptAt: invite.nextAttemptAt?.toISOString() ?? null,
+    estimatedFinishAt: invite.estimatedFinishAt?.toISOString() ?? null,
 });
 
 export const mapInvite = (
@@ -116,6 +122,8 @@ export const mapInvite = (
         targetChannelTelegramId: invite.targetChannelTelegramId,
         targetChannelAccessHash: invite.targetChannelAccessHash,
         targetChannelTitle: invite.targetChannelTitle,
+        delayBaseSeconds: invite.delayBaseSeconds,
+        delayJitterSeconds: invite.delayJitterSeconds,
         startedAt: invite.startedAt?.toISOString() ?? null,
         completedAt: invite.completedAt?.toISOString() ?? null,
         createdAt: invite.createdAt.toISOString(),

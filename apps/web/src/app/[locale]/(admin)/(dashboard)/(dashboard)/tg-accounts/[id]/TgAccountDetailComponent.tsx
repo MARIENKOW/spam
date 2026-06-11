@@ -41,6 +41,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { FULL_PATH_ROUTE } from "@myorg/shared/route";
 import { ClientDate } from "@/components/common/ClientDate";
+import { EtaInfo } from "@/components/common/EtaInfo";
 import { relativeTime, formatDuration } from "@myorg/shared/utils";
 import { useLocale } from "next-intl";
 import { BroadcastRunDto, InviteRunDto } from "@myorg/shared/dto";
@@ -687,6 +688,16 @@ export default function TgAccountDetailComponent({ accountId }: Props) {
                                         color="info"
                                         sx={{ height: 6, borderRadius: 3 }}
                                     />
+                                    <EtaInfo
+                                        nextAttemptAt={account.inviteProgress.nextAttemptAt}
+                                        estimatedFinishAt={account.inviteProgress.estimatedFinishAt}
+                                        compact
+                                        labels={{
+                                            nextAttempt: (time) => time ? t("pages.admin.tgAccounts.invite.eta.nextAttempt", { time }) : t("pages.admin.tgAccounts.invite.eta.nextAttemptSoon"),
+                                            finish: (time) => time ? t("pages.admin.tgAccounts.invite.eta.finish", { time }) : t("pages.admin.tgAccounts.invite.eta.finishSoon"),
+                                        }}
+                                        sx={{ mt: 0.75 }}
+                                    />
                                 </>
                             )}
                         </Box>
@@ -819,6 +830,16 @@ export default function TgAccountDetailComponent({ accountId }: Props) {
                                             : 0}
                                         color="info"
                                         sx={{ height: 6, borderRadius: 3 }}
+                                    />
+                                    <EtaInfo
+                                        nextAttemptAt={account.broadcastProgress.nextAttemptAt}
+                                        estimatedFinishAt={account.broadcastProgress.estimatedFinishAt}
+                                        compact
+                                        labels={{
+                                            nextAttempt: (time) => time ? t("pages.admin.tgAccounts.broadcast.eta.nextAttempt", { time }) : t("pages.admin.tgAccounts.broadcast.eta.nextAttemptSoon"),
+                                            finish: (time) => time ? t("pages.admin.tgAccounts.broadcast.eta.finish", { time }) : t("pages.admin.tgAccounts.broadcast.eta.finishSoon"),
+                                        }}
+                                        sx={{ mt: 0.75 }}
                                     />
                                 </>
                             )}

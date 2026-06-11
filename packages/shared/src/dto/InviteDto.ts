@@ -43,6 +43,8 @@ export interface InviteRunDto {
     targetChannelSnapshot: { telegramId: string; accessHash: string | null; title: string; url: string | null; username: string | null; photoBase64: string | null } | null;
     channelsSnapshot: InviteChannelDto[];
     status: "RUNNING" | "COMPLETED" | "STOPPED";
+    delayBaseSeconds: number;
+    delayJitterSeconds: number;
     invitedCount: number;
     failedCount: number;
     pendingCount: number;
@@ -74,6 +76,10 @@ export interface InviteProgressDto {
     total: number;
     channels: InviteChannelDto[];
     startedAt: string | null;
+    delayBaseSeconds: number;
+    delayJitterSeconds: number;
+    nextAttemptAt: string | null;
+    estimatedFinishAt: string | null;
 }
 
 export interface InviteDto {
@@ -83,6 +89,8 @@ export interface InviteDto {
     targetChannelTelegramId: string | null;
     targetChannelAccessHash: string | null;
     targetChannelTitle: string | null;
+    delayBaseSeconds: number;
+    delayJitterSeconds: number;
     startedAt: string | null;
     completedAt: string | null;
     createdAt: string;

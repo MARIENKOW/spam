@@ -26,6 +26,7 @@ import { StyledButton } from "@/components/ui/StyledButton";
 import { StyledTypography } from "@/components/ui/StyledTypography";
 import { ClientDate } from "@/components/common/ClientDate";
 import { ErrorDataButton } from "@/components/common/ErrorDataDialog";
+import { EtaInfo } from "@/components/common/EtaInfo";
 import { relativeTime, formatDuration } from "@myorg/shared/utils";
 import { useLocale } from "next-intl";
 import AccountBreadcrumbs from "@/components/features/Breadcrumbs/AccountBreadcrumbs";
@@ -307,6 +308,12 @@ export default function InviteRunDetailComponent({ accountId, runId }: Props) {
                                 })}
                             </StyledTypography>
                         )}
+                        <StyledTypography variant="caption" color="text.disabled">
+                            {t("pages.admin.tgAccounts.invite.delay.summary", {
+                                min: +(run.delayBaseSeconds / 60).toFixed(1),
+                                max: +((run.delayBaseSeconds + run.delayJitterSeconds) / 60).toFixed(1),
+                            })}
+                        </StyledTypography>
                     </Box>
                 </Box>
 
@@ -382,6 +389,17 @@ export default function InviteRunDetailComponent({ accountId, runId }: Props) {
                     color={isRunning ? "info" : isCompleted ? "success" : "warning"}
                     sx={{ height: 8, borderRadius: 4 }}
                 />
+                {isRunning && progress && (
+                    <EtaInfo
+                        nextAttemptAt={progress.nextAttemptAt}
+                        estimatedFinishAt={progress.estimatedFinishAt}
+                        labels={{
+                            nextAttempt: (time) => time ? t("pages.admin.tgAccounts.invite.eta.nextAttempt", { time }) : t("pages.admin.tgAccounts.invite.eta.nextAttemptSoon"),
+                            finish: (time) => time ? t("pages.admin.tgAccounts.invite.eta.finish", { time }) : t("pages.admin.tgAccounts.invite.eta.finishSoon"),
+                        }}
+                        sx={{ mt: 1 }}
+                    />
+                )}
             </Box>
 
             {/* Source channels */}

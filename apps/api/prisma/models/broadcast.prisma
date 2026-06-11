@@ -4,6 +4,10 @@ model Broadcast {
     tgAccount   TgAccount       @relation(fields: [tgAccountId], references: [id], onDelete: Cascade)
     message     String          @default("")
     status      BroadcastStatus @default(DRAFT)
+    delayBaseSeconds   Int       @default(180)
+    delayJitterSeconds Int       @default(60)
+    nextAttemptAt      DateTime?
+    estimatedFinishAt  DateTime?
     startedAt   DateTime?
     completedAt DateTime?
     createdAt   DateTime        @default(now())
@@ -47,6 +51,7 @@ model BroadcastRecipient {
     status       RecipientStatus @default(PENDING)
     errorMessage String?
     errorData    Json?
+    delaySeconds Int?
     sentAt       DateTime?
 
     @@unique([broadcastId, userId])
@@ -62,6 +67,8 @@ model BroadcastRun {
     message          String
     channelsSnapshot Json      @default("[]")
     status           RunStatus
+    delayBaseSeconds   Int     @default(180)
+    delayJitterSeconds Int     @default(60)
     sentCount        Int       @default(0)
     failedCount      Int       @default(0)
     pendingCount     Int       @default(0)
@@ -87,6 +94,7 @@ model BroadcastRunRecipient {
     status       RecipientStatus
     errorMessage String?
     errorData    Json?
+    delaySeconds Int?
     sentAt       DateTime?
 
     @@index([runId])

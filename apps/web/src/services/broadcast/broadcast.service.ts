@@ -11,6 +11,7 @@ import { FULL_PATH_ENDPOINT } from "@myorg/shared/endpoints";
 import {
     AddBroadcastChannelOutput,
     SearchChannelOutput,
+    UpdateBroadcastDelayOutput,
     UpdateBroadcastMessageOutput,
 } from "@myorg/shared/form";
 import { FetchCustom, FetchCustomReturn } from "@/utils/api";
@@ -25,6 +26,7 @@ function broadcastPath(accountId: string): string {
 export default class BroadcastService {
     get: (accountId: string) => FetchCustomReturn<BroadcastDto>;
     updateMessage: (accountId: string, body: UpdateBroadcastMessageOutput) => FetchCustomReturn<BroadcastDto>;
+    updateDelay: (accountId: string, body: UpdateBroadcastDelayOutput) => FetchCustomReturn<BroadcastDto>;
     searchChannels: (accountId: string, body: SearchChannelOutput) => FetchCustomReturn<ChannelSearchResultDto[]>;
     addChannel: (accountId: string, body: AddBroadcastChannelOutput) => FetchCustomReturn<BroadcastDto>;
     removeChannel: (accountId: string, channelId: string) => FetchCustomReturn<BroadcastDto>;
@@ -53,6 +55,13 @@ export default class BroadcastService {
 
         this.updateMessage = (accountId, body) =>
             api<BroadcastDto>(`${broadcastPath(accountId)}/message`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+
+        this.updateDelay = (accountId, body) =>
+            api<BroadcastDto>(`${broadcastPath(accountId)}/delay`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body),

@@ -408,6 +408,19 @@ export const en: MessageStructure = {
                 },
                 invite: {
                     name: "Invite to channel",
+                    delay: {
+                        title: "Delay between invites",
+                        base: "Base delay",
+                        jitter: "Random jitter",
+                        minutes: "min",
+                        summary: "Delay {min}–{max} min",
+                    },
+                    eta: {
+                        nextAttempt: "Next invite in {time}",
+                        nextAttemptSoon: "Next invite any moment",
+                        finish: "Est. finish in {time}",
+                        finishSoon: "Finishing up",
+                    },
                     runTitle: "Run #{n}",
                     progress: "{invited} of {total}",
                     runs: "{count} invites",
@@ -500,6 +513,19 @@ export const en: MessageStructure = {
                 },
                 broadcast: {
                     name: "Broadcast",
+                    delay: {
+                        title: "Delay between messages",
+                        base: "Base delay",
+                        jitter: "Random jitter",
+                        minutes: "min",
+                        summary: "Delay {min}–{max} min",
+                    },
+                    eta: {
+                        nextAttempt: "Next message in {time}",
+                        nextAttemptSoon: "Next message any moment",
+                        finish: "Est. finish in {time}",
+                        finishSoon: "Finishing up",
+                    },
                     runTitle: "Run #{n}",
                     openRun: "Open",
                     runs: "{count} broadcasts",

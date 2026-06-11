@@ -72,6 +72,20 @@ export class InviteService {
         return mapInvite(updated, updated.channels, updated.runs, counts.pending, counts.sent, counts.failed);
     }
 
+    async updateDelaySettings(tgAccountId: string, delayBaseSeconds: number, delayJitterSeconds: number): Promise<InviteDto> {
+        const invite = await this.findByAccountOrFail(tgAccountId);
+        this.assertEditable(invite.status);
+
+        const updated = await this.prisma.invite.update({
+            where: { id: invite.id },
+            data: { delayBaseSeconds, delayJitterSeconds },
+            include: { channels: true, runs: { orderBy: { startedAt: "desc" } } },
+        });
+
+        const counts = await this.getRecipientCounts(updated.id);
+        return mapInvite(updated, updated.channels, updated.runs, counts.pending, counts.sent, counts.failed);
+    }
+
     // ── Channels ──────────────────────────────────────────────────────────────
 
     async addChannel(tgAccountId: string, data: AddInviteChannelOutput): Promise<InviteDto> {
@@ -226,6 +240,16 @@ export class InviteService {
               }
             : null;
         const channelsSnapshot = invite.channels.map(mapInviteChannel);
+        const base = invite.delayBaseSeconds;
+        const jitter = invite.delayJitterSeconds;
+
+        // Precompute each pending recipient's jittered delay so the schedule is deterministic
+        // and the ETA prediction matches what the worker will actually do.
+        await this.prisma.$executeRaw`
+            UPDATE "invite_recipients"
+            SET "delaySeconds" = ${base} + floor(random() * (${jitter} + 1))::int
+            WHERE "inviteId" = ${invite.id} AND "status" = 'PENDING'
+        `;
 
         // Atomically flip DRAFT → RUNNING so two concurrent starts can't both create a run.
         await this.prisma.$transaction(async (tx) => {
@@ -242,6 +266,8 @@ export class InviteService {
                     targetChannelSnapshot: targetChannelSnapshot as any,
                     channelsSnapshot: channelsSnapshot as any,
                     status: "RUNNING",
+                    delayBaseSeconds: base,
+                    delayJitterSeconds: jitter,
                     invitedCount: 0,
                     failedCount: 0,
                     totalCount: pendingCount,
@@ -249,6 +275,9 @@ export class InviteService {
                 },
             });
         });
+
+        // First recipient is processed immediately; seed the schedule/ETA from now.
+        await this.updateSchedule(invite.id, now);
 
         const freshInvite = await this.prisma.invite.findUnique({
             where: { id: invite.id },
@@ -341,6 +370,29 @@ export class InviteService {
         return this.prisma.inviteRecipient.findFirst({
             where: { inviteId, status: "PENDING" },
             orderBy: { id: "asc" },
+        });
+    }
+
+    // Records the real time of the next attempt (worker-known) and the estimated finish
+    // time = nextAttemptAt + the precomputed delays of all pending recipients after the next.
+    async updateSchedule(inviteId: string, nextAttemptAt: Date): Promise<void> {
+        const [pendings, invite] = await Promise.all([
+            this.prisma.inviteRecipient.findMany({
+                where: { inviteId, status: "PENDING" },
+                orderBy: { id: "asc" },
+                select: { delaySeconds: true },
+            }),
+            this.prisma.invite.findUnique({
+                where: { id: inviteId },
+                select: { delayBaseSeconds: true },
+            }),
+        ]);
+        const base = invite?.delayBaseSeconds ?? 180;
+        const afterSeconds = pendings.slice(1).reduce((sum, r) => sum + (r.delaySeconds ?? base), 0);
+        const estimatedFinishAt = new Date(nextAttemptAt.getTime() + afterSeconds * 1000);
+        await this.prisma.invite.update({
+            where: { id: inviteId },
+            data: { nextAttemptAt, estimatedFinishAt },
         });
     }
 
@@ -539,6 +591,8 @@ export class InviteService {
                     targetChannelTelegramId: null,
                     targetChannelAccessHash: null,
                     targetChannelTitle: null,
+                    nextAttemptAt: null,
+                    estimatedFinishAt: null,
                 },
             }),
         ]);

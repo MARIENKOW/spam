@@ -20,6 +20,8 @@ import {
     AddBroadcastChannelSchema,
     SearchChannelOutput,
     SearchChannelSchema,
+    UpdateBroadcastDelayOutput,
+    UpdateBroadcastDelaySchema,
     UpdateBroadcastMessageOutput,
     UpdateBroadcastMessageSchema,
 } from "@myorg/shared/form";
@@ -65,6 +67,16 @@ export class BroadcastController {
     ): Promise<BroadcastDto> {
         await this.assertAccess(accountId, actor);
         return this.broadcastService.updateMessage(accountId, body.message);
+    }
+
+    @Patch("delay")
+    async updateDelay(
+        @Param("accountId") accountId: string,
+        @Body(new ZodValidationPipe(UpdateBroadcastDelaySchema)) body: UpdateBroadcastDelayOutput,
+        @CurrentActor() actor: AdminActor,
+    ): Promise<BroadcastDto> {
+        await this.assertAccess(accountId, actor);
+        return this.broadcastService.updateDelaySettings(accountId, body.delayBaseSeconds, body.delayJitterSeconds);
     }
 
     @Post("channels/search")

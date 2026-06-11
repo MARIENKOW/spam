@@ -165,6 +165,7 @@ export const ENDPOINT = {
         broadcast: {
             path: "broadcast",
             message: { path: "message" },
+            delay: { path: "delay" },
             channels: {
                 path: "channels",
                 search: { path: "search" },
@@ -185,6 +186,7 @@ export const ENDPOINT = {
         invite: {
             path: "invite",
             targetChannel: { path: "target-channel" },
+            delay: { path: "delay" },
             channels: {
                 path: "channels",
                 search: { path: "search" },

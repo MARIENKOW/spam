@@ -425,6 +425,19 @@ export const ru = {
                 },
                 invite: {
                     name: "Добавить в канал",
+                    delay: {
+                        title: "Задержка между добавлениями",
+                        base: "Базовая задержка",
+                        jitter: "Случайный разброс",
+                        minutes: "мин",
+                        summary: "Задержка {min}–{max} мин",
+                    },
+                    eta: {
+                        nextAttempt: "Следующее добавление через {time}",
+                        nextAttemptSoon: "Следующее добавление вот-вот",
+                        finish: "Ориентир. завершение через {time}",
+                        finishSoon: "Завершается",
+                    },
                     runTitle: "Запуск #{n}",
                     progress: "{invited} из {total}",
                     runs: "{count} инвайтов",
@@ -517,6 +530,19 @@ export const ru = {
                 },
                 broadcast: {
                     name: "Рассылка",
+                    delay: {
+                        title: "Задержка между сообщениями",
+                        base: "Базовая задержка",
+                        jitter: "Случайный разброс",
+                        minutes: "мин",
+                        summary: "Задержка {min}–{max} мин",
+                    },
+                    eta: {
+                        nextAttempt: "Следующее сообщение через {time}",
+                        nextAttemptSoon: "Следующее сообщение вот-вот",
+                        finish: "Ориентир. завершение через {time}",
+                        finishSoon: "Завершается",
+                    },
                     runTitle: "Запуск #{n}",
                     openRun: "Открыть",
                     runs: "{count} рассылок",

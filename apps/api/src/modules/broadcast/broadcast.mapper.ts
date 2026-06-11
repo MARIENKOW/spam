@@ -49,6 +49,8 @@ export const mapBroadcastRun = (r: BroadcastRun): BroadcastRunDto => ({
     message: r.message,
     channelsSnapshot: (r.channelsSnapshot as unknown as BroadcastChannelDto[]) ?? [],
     status: r.status as BroadcastRunDto["status"],
+    delayBaseSeconds: r.delayBaseSeconds,
+    delayJitterSeconds: r.delayJitterSeconds,
     sentCount: r.sentCount,
     failedCount: r.failedCount,
     pendingCount: r.pendingCount,
@@ -85,6 +87,10 @@ export const mapBroadcastProgress = (
     total: pending + sent + failed,
     channels: channels.map(mapBroadcastChannel),
     startedAt: broadcast.startedAt?.toISOString() ?? null,
+    delayBaseSeconds: broadcast.delayBaseSeconds,
+    delayJitterSeconds: broadcast.delayJitterSeconds,
+    nextAttemptAt: broadcast.nextAttemptAt?.toISOString() ?? null,
+    estimatedFinishAt: broadcast.estimatedFinishAt?.toISOString() ?? null,
 });
 
 export const mapBroadcast = (
@@ -101,6 +107,8 @@ export const mapBroadcast = (
         message: broadcast.message,
         status: broadcast.status as BroadcastDto["status"],
         currentRunId: currentRun?.id ?? null,
+        delayBaseSeconds: broadcast.delayBaseSeconds,
+        delayJitterSeconds: broadcast.delayJitterSeconds,
         startedAt: broadcast.startedAt?.toISOString() ?? null,
         completedAt: broadcast.completedAt?.toISOString() ?? null,
         createdAt: broadcast.createdAt.toISOString(),

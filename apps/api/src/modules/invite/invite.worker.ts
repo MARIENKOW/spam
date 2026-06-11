@@ -7,8 +7,7 @@ import {
 import { InviteService } from "@/modules/invite/invite.service";
 import { InviteTgService } from "@/modules/invite/invite.tg.service";
 
-const INVITE_DELAY_BASE_MS = 3 * 60 * 1000;
-const INVITE_DELAY_RANDOM_MS = 60 * 1000;
+const DEFAULT_DELAY_SECONDS = 180;
 const FLOOD_WAIT_BUFFER_MS = 2_000;
 const INVITE_MAX_TRANSIENT_RETRIES = 3;
 const TRANSIENT_RETRY_BASE_MS = 30 * 1000;
@@ -37,10 +36,6 @@ const PERMANENT_RECIPIENT_ERRORS = new Set([
     "CHANNEL_INVALID",
     "CHAT_WRITE_FORBIDDEN",
 ]);
-
-function randomDelay(): number {
-    return INVITE_DELAY_BASE_MS + Math.floor(Math.random() * INVITE_DELAY_RANDOM_MS);
-}
 
 function serializeError(err: any): Record<string, unknown> {
     return {
@@ -108,11 +103,9 @@ export class InviteWorker implements OnModuleInit, OnModuleDestroy {
                 "Missing access hash or target channel — re-fetch recipients and try again",
             );
             this.logger.warn(`Invite ${inviteId}: skipped ${recipient.userId} — missing data`);
-            await this.continueOrFinish(inviteId, 0);
+            await this.continueOrFinish(inviteId);
             return;
         }
-
-        const delayMs = randomDelay();
 
         // Isolate the API call so a DB-write failure can't masquerade as an invite failure
         let apiError: any = null;
@@ -140,7 +133,7 @@ export class InviteWorker implements OnModuleInit, OnModuleDestroy {
                     serializeError(apiError),
                 );
                 this.logger.warn(`Invite ${inviteId}: flood wait ${apiError.seconds}s — rescheduling`);
-                this.schedule(inviteId, floodDelayMs);
+                await this.reschedule(inviteId, floodDelayMs);
                 return;
             }
 
@@ -148,7 +141,7 @@ export class InviteWorker implements OnModuleInit, OnModuleDestroy {
             if (msg === "USER_ALREADY_PARTICIPANT") {
                 await this.inviteService.markRecipientSent(recipient.id);
                 this.logger.log(`Invite ${inviteId}: ${recipient.userId} already in channel — marked sent`);
-                await this.continueOrFinish(inviteId, delayMs);
+                await this.continueOrFinish(inviteId);
                 return;
             }
 
@@ -160,7 +153,7 @@ export class InviteWorker implements OnModuleInit, OnModuleDestroy {
                     serializeError(apiError),
                 );
                 this.logger.warn(`Invite ${inviteId}: ${recipient.userId} — channel requires approval`);
-                await this.continueOrFinish(inviteId, delayMs);
+                await this.continueOrFinish(inviteId);
                 return;
             }
 
@@ -168,7 +161,7 @@ export class InviteWorker implements OnModuleInit, OnModuleDestroy {
             if (PERMANENT_RECIPIENT_ERRORS.has(msg)) {
                 await this.inviteService.markRecipientFailed(recipient.id, msg, serializeError(apiError));
                 this.logger.warn(`Invite ${inviteId}: ${recipient.userId} — ${msg}`);
-                await this.continueOrFinish(inviteId, delayMs);
+                await this.continueOrFinish(inviteId);
                 return;
             }
 
@@ -178,7 +171,7 @@ export class InviteWorker implements OnModuleInit, OnModuleDestroy {
                 this.transientRetries.set(recipient.id, attempts);
                 const retryMs = TRANSIENT_RETRY_BASE_MS * attempts;
                 this.logger.warn(`Invite ${inviteId}: transient error (try ${attempts}) — ${apiError.message}`);
-                this.schedule(inviteId, retryMs);
+                await this.reschedule(inviteId, retryMs);
                 return;
             }
 
@@ -189,7 +182,7 @@ export class InviteWorker implements OnModuleInit, OnModuleDestroy {
                 serializeError(apiError),
             );
             this.logger.error(`Invite ${inviteId}: giving up on ${recipient.userId} — ${apiError.message}`);
-            await this.continueOrFinish(inviteId, delayMs);
+            await this.continueOrFinish(inviteId);
             return;
         }
 
@@ -206,16 +199,30 @@ export class InviteWorker implements OnModuleInit, OnModuleDestroy {
             );
         }
 
-        await this.continueOrFinish(inviteId, delayMs);
+        await this.continueOrFinish(inviteId);
     }
 
-    private async continueOrFinish(inviteId: string, delayMs: number): Promise<void> {
-        if (await this.inviteService.hasPendingRecipients(inviteId)) {
-            this.schedule(inviteId, delayMs);
-        } else {
+    private async continueOrFinish(inviteId: string): Promise<void> {
+        const next = await this.inviteService.getNextPendingRecipient(inviteId);
+        if (!next) {
             await this.inviteService.markCompleted(inviteId);
             this.logger.log(`Invite ${inviteId} completed`);
+            return;
         }
+        const delayMs = (next.delaySeconds ?? DEFAULT_DELAY_SECONDS) * 1000;
+        await this.reschedule(inviteId, delayMs);
+    }
+
+    // Persists the real next-attempt time (so the UI can show an accurate ETA) and schedules
+    // the next tick after the given delay.
+    private async reschedule(inviteId: string, delayMs: number): Promise<void> {
+        const nextAttemptAt = new Date(Date.now() + delayMs);
+        try {
+            await this.inviteService.updateSchedule(inviteId, nextAttemptAt);
+        } catch (err) {
+            this.logger.warn(`Invite ${inviteId}: failed to persist schedule`, err as any);
+        }
+        this.schedule(inviteId, delayMs);
     }
 
     private async resumeRunningInvites(): Promise<void> {

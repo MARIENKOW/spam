@@ -7,8 +7,7 @@ import {
 import { BroadcastService } from "@/modules/broadcast/broadcast.service";
 import { BroadcastTgService } from "@/modules/broadcast/broadcast.tg.service";
 
-const SEND_DELAY_BASE_MS = 3 * 60 * 1000;
-const SEND_DELAY_RANDOM_MS = 60 * 1000;
+const DEFAULT_DELAY_SECONDS = 180;
 const FLOOD_WAIT_BUFFER_MS = 2_000;
 const MAX_TRANSIENT_RETRIES = 3;
 const TRANSIENT_RETRY_BASE_MS = 30 * 1000;
@@ -33,10 +32,6 @@ const PERMANENT_RECIPIENT_ERRORS = new Set([
     // Account-level — no point retrying the same user
     "PEER_FLOOD",
 ]);
-
-function randomDelay(): number {
-    return SEND_DELAY_BASE_MS + Math.floor(Math.random() * SEND_DELAY_RANDOM_MS);
-}
 
 function serializeError(err: any): Record<string, unknown> {
     return {
@@ -104,11 +99,9 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
                 "Missing access hash — re-fetch channel recipients and start a new broadcast",
             );
             this.logger.warn(`Broadcast ${broadcastId}: skipped ${recipient.userId} — no access hash`);
-            await this.continueOrFinish(broadcastId, 0);
+            await this.continueOrFinish(broadcastId);
             return;
         }
-
-        const delayMs = randomDelay();
 
         // Isolate the API call so a DB-write failure can't masquerade as a send failure
         let apiError: any = null;
@@ -135,7 +128,7 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
                     serializeError(apiError),
                 );
                 this.logger.warn(`Broadcast ${broadcastId}: flood wait ${apiError.seconds}s — rescheduling`);
-                this.schedule(broadcastId, floodDelayMs);
+                await this.reschedule(broadcastId, floodDelayMs);
                 return;
             }
 
@@ -143,7 +136,7 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
             if (PERMANENT_RECIPIENT_ERRORS.has(msg)) {
                 await this.broadcastService.markRecipientFailed(recipient.id, msg, serializeError(apiError));
                 this.logger.warn(`Broadcast ${broadcastId}: ${recipient.userId} — ${msg}`);
-                await this.continueOrFinish(broadcastId, delayMs);
+                await this.continueOrFinish(broadcastId);
                 return;
             }
 
@@ -153,7 +146,7 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
                 this.transientRetries.set(recipient.id, attempts);
                 const retryMs = TRANSIENT_RETRY_BASE_MS * attempts;
                 this.logger.warn(`Broadcast ${broadcastId}: transient error (try ${attempts}) — ${apiError.message}`);
-                this.schedule(broadcastId, retryMs);
+                await this.reschedule(broadcastId, retryMs);
                 return;
             }
 
@@ -164,7 +157,7 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
                 serializeError(apiError),
             );
             this.logger.error(`Broadcast ${broadcastId}: giving up on ${recipient.userId} — ${apiError.message}`);
-            await this.continueOrFinish(broadcastId, delayMs);
+            await this.continueOrFinish(broadcastId);
             return;
         }
 
@@ -180,16 +173,30 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
             );
         }
 
-        await this.continueOrFinish(broadcastId, delayMs);
+        await this.continueOrFinish(broadcastId);
     }
 
-    private async continueOrFinish(broadcastId: string, delayMs: number): Promise<void> {
-        if (await this.broadcastService.hasPendingRecipients(broadcastId)) {
-            this.schedule(broadcastId, delayMs);
-        } else {
+    private async continueOrFinish(broadcastId: string): Promise<void> {
+        const next = await this.broadcastService.getNextPendingRecipient(broadcastId);
+        if (!next) {
             await this.broadcastService.markCompleted(broadcastId);
             this.logger.log(`Broadcast ${broadcastId} completed`);
+            return;
         }
+        const delayMs = (next.delaySeconds ?? DEFAULT_DELAY_SECONDS) * 1000;
+        await this.reschedule(broadcastId, delayMs);
+    }
+
+    // Persists the real next-attempt time (so the UI can show an accurate ETA) and schedules
+    // the next tick after the given delay.
+    private async reschedule(broadcastId: string, delayMs: number): Promise<void> {
+        const nextAttemptAt = new Date(Date.now() + delayMs);
+        try {
+            await this.broadcastService.updateSchedule(broadcastId, nextAttemptAt);
+        } catch (err) {
+            this.logger.warn(`Broadcast ${broadcastId}: failed to persist schedule`, err as any);
+        }
+        this.schedule(broadcastId, delayMs);
     }
 
     private async resumeRunningBroadcasts(): Promise<void> {

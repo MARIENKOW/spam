@@ -9,7 +9,7 @@ import { isApiErrorResponse } from "@/helpers/error/error.type.helper";
 import { ApiErrorResponse } from "@myorg/shared/dto";
 import { snackbarSuccess } from "@/utils/snackbar/snackbar.success";
 import { useTranslations } from "next-intl";
-import { AddBroadcastChannelOutput } from "@myorg/shared/form";
+import { AddBroadcastChannelOutput, UpdateBroadcastDelayOutput } from "@myorg/shared/form";
 import { useRouter } from "@/i18n/navigation";
 import { FULL_PATH_ROUTE } from "@myorg/shared/route";
 
@@ -36,6 +36,17 @@ export function useUpdateBroadcastMessage(accountId: string) {
     return useMutation({
         mutationFn: (message: string) =>
             service.updateMessage(accountId, { message }),
+        onSuccess: () => invalidateBroadcast(),
+        onError: (error) => errorHandler({ error, t }),
+    });
+}
+
+export function useUpdateBroadcastDelay(accountId: string) {
+    const { invalidateBroadcast } = useBroadcastCache(accountId);
+    const t = useTranslations();
+
+    return useMutation({
+        mutationFn: (body: UpdateBroadcastDelayOutput) => service.updateDelay(accountId, body),
         onSuccess: () => invalidateBroadcast(),
         onError: (error) => errorHandler({ error, t }),
     });

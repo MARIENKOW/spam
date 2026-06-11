@@ -18,3 +18,9 @@ export const AddInviteChannelSchema = z.object({
     memberCount: z.number().nullable(),
 });
 export type AddInviteChannelOutput = z.infer<typeof AddInviteChannelSchema>;
+
+export const UpdateInviteDelaySchema = z.object({
+    delayBaseSeconds: z.number().int().min(0).max(86400),
+    delayJitterSeconds: z.number().int().min(0).max(86400),
+});
+export type UpdateInviteDelayOutput = z.infer<typeof UpdateInviteDelaySchema>;

@@ -23,6 +23,7 @@ import { StyledButton } from "@/components/ui/StyledButton";
 import { StyledTypography } from "@/components/ui/StyledTypography";
 import { ClientDate } from "@/components/common/ClientDate";
 import { ErrorDataButton } from "@/components/common/ErrorDataDialog";
+import { EtaInfo } from "@/components/common/EtaInfo";
 import { relativeTime, formatDuration } from "@myorg/shared/utils";
 import AccountBreadcrumbs from "@/components/features/Breadcrumbs/AccountBreadcrumbs";
 import { FULL_PATH_ROUTE } from "@myorg/shared/route";
@@ -285,6 +286,12 @@ export default function BroadcastRunDetailComponent({ accountId, runId }: Props)
                                 })}
                             </StyledTypography>
                         )}
+                        <StyledTypography variant="caption" color="text.disabled">
+                            {t("pages.admin.tgAccounts.broadcast.delay.summary", {
+                                min: +(run.delayBaseSeconds / 60).toFixed(1),
+                                max: +((run.delayBaseSeconds + run.delayJitterSeconds) / 60).toFixed(1),
+                            })}
+                        </StyledTypography>
                     </Box>
                 </Box>
 
@@ -333,6 +340,17 @@ export default function BroadcastRunDetailComponent({ accountId, runId }: Props)
                     color={isRunning ? "info" : isCompleted ? "success" : "warning"}
                     sx={{ height: 8, borderRadius: 4 }}
                 />
+                {isRunning && progress && (
+                    <EtaInfo
+                        nextAttemptAt={progress.nextAttemptAt}
+                        estimatedFinishAt={progress.estimatedFinishAt}
+                        labels={{
+                            nextAttempt: (time) => time ? t("pages.admin.tgAccounts.broadcast.eta.nextAttempt", { time }) : t("pages.admin.tgAccounts.broadcast.eta.nextAttemptSoon"),
+                            finish: (time) => time ? t("pages.admin.tgAccounts.broadcast.eta.finish", { time }) : t("pages.admin.tgAccounts.broadcast.eta.finishSoon"),
+                        }}
+                        sx={{ mt: 1 }}
+                    />
+                )}
             </Box>
 
             {/* Target channels */}

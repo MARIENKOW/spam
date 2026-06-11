@@ -33,6 +33,8 @@ export interface BroadcastRunDto {
     message: string;
     channelsSnapshot: BroadcastChannelDto[];
     status: RunStatus;
+    delayBaseSeconds: number;
+    delayJitterSeconds: number;
     sentCount: number;
     failedCount: number;
     pendingCount: number;
@@ -63,6 +65,10 @@ export interface BroadcastProgressDto {
     total: number;
     channels: BroadcastChannelDto[];
     startedAt: string | null;
+    delayBaseSeconds: number;
+    delayJitterSeconds: number;
+    nextAttemptAt: string | null;
+    estimatedFinishAt: string | null;
 }
 
 export interface BroadcastDto {
@@ -70,6 +76,8 @@ export interface BroadcastDto {
     message: string;
     status: BroadcastStatus;
     currentRunId: string | null;
+    delayBaseSeconds: number;
+    delayJitterSeconds: number;
     startedAt: string | null;
     completedAt: string | null;
     createdAt: string;

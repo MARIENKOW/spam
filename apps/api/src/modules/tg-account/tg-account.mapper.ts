@@ -5,8 +5,8 @@ import { buildFileUrl } from "@/infrastructure/file/file.utils";
 
 export const mapTgAccount = (
     account: TgAccountRecord,
-    broadcastProgress: { sent: number; failed: number; total: number } | null = null,
-    inviteProgress: { invited: number; failed: number; total: number } | null = null,
+    broadcastProgress: { sent: number; failed: number; total: number; nextAttemptAt: string | null; estimatedFinishAt: string | null } | null = null,
+    inviteProgress: { invited: number; failed: number; total: number; nextAttemptAt: string | null; estimatedFinishAt: string | null } | null = null,
 ): TgAccountDto => ({
     id: account.id,
     phone: account.phone,
