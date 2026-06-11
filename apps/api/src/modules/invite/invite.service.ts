@@ -227,13 +227,16 @@ export class InviteService {
             : null;
         const channelsSnapshot = invite.channels.map(mapInviteChannel);
 
-        const [updated] = await this.prisma.$transaction([
-            this.prisma.invite.update({
-                where: { id: invite.id },
+        // Atomically flip DRAFT → RUNNING so two concurrent starts can't both create a run.
+        await this.prisma.$transaction(async (tx) => {
+            const res = await tx.invite.updateMany({
+                where: { id: invite.id, status: { not: "RUNNING" } },
                 data: { status: "RUNNING", startedAt: now, completedAt: null },
-                include: { channels: true, runs: { orderBy: { startedAt: "desc" } } },
-            }),
-            this.prisma.inviteRun.create({
+            });
+            if (res.count === 0) {
+                throw new BadRequestException("invite.alreadyRunning");
+            }
+            await tx.inviteRun.create({
                 data: {
                     inviteId: invite.id,
                     targetChannelSnapshot: targetChannelSnapshot as any,
@@ -244,8 +247,8 @@ export class InviteService {
                     totalCount: pendingCount,
                     startedAt: now,
                 },
-            }),
-        ]);
+            });
+        });
 
         const freshInvite = await this.prisma.invite.findUnique({
             where: { id: invite.id },
@@ -459,6 +462,11 @@ export class InviteService {
         const pendingCount = allRecipients.filter((r) => r.status === "PENDING").length;
         const totalCount = allRecipients.length;
         const finishedAt = new Date();
+
+        // A concurrent stop()/markCompleted may have already finalized this run (run no
+        // longer RUNNING) and wiped its recipients. Without this guard the else-branch
+        // below would create a spurious empty duplicate history entry.
+        if (!runningRun && allRecipients.length === 0) return;
 
         let runId: string;
         if (runningRun) {

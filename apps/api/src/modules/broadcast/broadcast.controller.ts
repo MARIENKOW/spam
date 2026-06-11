@@ -4,6 +4,7 @@ import {
     DefaultValuePipe,
     Delete,
     Get,
+    NotFoundException,
     Param,
     ParseIntPipe,
     Patch,
@@ -35,8 +36,6 @@ import { FULL_PATH_ENDPOINT } from "@myorg/shared/endpoints";
 import { BroadcastService } from "@/modules/broadcast/broadcast.service";
 import { BroadcastTgService } from "@/modules/broadcast/broadcast.tg.service";
 import { BroadcastWorker } from "@/modules/broadcast/broadcast.worker";
-
-const { broadcast: broadcastPath } = FULL_PATH_ENDPOINT.tgAccount;
 
 @Controller(`${FULL_PATH_ENDPOINT.tgAccount.path}/:accountId/broadcast`)
 @Auth("ADMIN")
@@ -93,9 +92,10 @@ export class BroadcastController {
         if (channel) {
             this.broadcastTg
                 .fetchChannelRecipients(accountId, broadcast.id, channel.id, body.telegramId)
-                .catch((err) =>
-                    this.logger.warn(`Failed to fetch recipients for channel ${body.telegramId}: ${err.message}`),
-                );
+                .catch((err) => {
+                    this.logger.warn(`Failed to fetch recipients for channel ${body.telegramId}: ${err.message}`);
+                    this.broadcastService.updateChannelFetchError(channel.id, err.message).catch(() => {});
+                });
         }
 
         return result;
@@ -119,17 +119,21 @@ export class BroadcastController {
     ): Promise<{ count: number }> {
         await this.assertAccess(accountId, actor);
         const broadcast = await this.broadcastService.findByAccountOrFail(accountId);
-        const full = await this.broadcastService.getOrCreate(accountId);
-        const channel = full.channels.find((c) => c.id === channelId);
-        if (!channel) throw new Error("channel.notFound");
+        const channel = await this.broadcastService.findChannel(broadcast.id, channelId);
+        if (!channel) throw new NotFoundException("channel.notFound");
 
-        const count = await this.broadcastTg.fetchChannelRecipients(
-            accountId,
-            broadcast.id,
-            channelId,
-            channel.telegramId,
-        );
-        return { count };
+        try {
+            const count = await this.broadcastTg.fetchChannelRecipients(
+                accountId,
+                broadcast.id,
+                channelId,
+                channel.telegramId,
+            );
+            return { count };
+        } catch (err: any) {
+            await this.broadcastService.updateChannelFetchError(channelId, err.message).catch(() => {});
+            throw err;
+        }
     }
 
     @Get("progress")
@@ -162,6 +166,16 @@ export class BroadcastController {
         return this.broadcastService.getHistory(accountId);
     }
 
+    @Get("history/:runId")
+    async getRun(
+        @Param("accountId") accountId: string,
+        @Param("runId") runId: string,
+        @CurrentActor() actor: AdminActor,
+    ): Promise<BroadcastRunDto> {
+        await this.assertAccess(accountId, actor);
+        return this.broadcastService.getRun(accountId, runId);
+    }
+
     @Get("history/:runId/recipients")
     async getRunRecipients(
         @Param("accountId") accountId: string,
@@ -172,7 +186,7 @@ export class BroadcastController {
         @CurrentActor() actor: AdminActor,
     ): Promise<PagedResult<BroadcastRunRecipientDto>> {
         await this.assertAccess(accountId, actor);
-        return this.broadcastService.getRunRecipients(runId, page, limit, status);
+        return this.broadcastService.getRunRecipients(accountId, runId, page, limit, status);
     }
 
     @Delete("history/:runId")
@@ -182,7 +196,7 @@ export class BroadcastController {
         @CurrentActor() actor: AdminActor,
     ): Promise<void> {
         await this.assertAccess(accountId, actor);
-        await this.broadcastService.deleteRun(runId);
+        await this.broadcastService.deleteRun(accountId, runId);
     }
 
     @Delete("history")

@@ -192,14 +192,24 @@ export class InviteTgService {
                 throw err;
             }
 
-            // Verify the user is actually an active member (not pending/banned/left)
+            // Verify the user is actually an active member (not pending/banned/left).
+            // InviteToChannel already succeeded with no missingInvitees, so this is a
+            // best-effort double-check. GetParticipant can fail for reasons unrelated to
+            // membership (min/stale access hash → USER_ID_INVALID, replication lag, or the
+            // account lacking rights to query members), so only an explicit
+            // USER_NOT_PARTICIPANT — meaning the channel created a join request instead of
+            // adding the user — counts as a real failure.
             let verifyResult: Awaited<ReturnType<typeof client.invoke<Api.channels.GetParticipant>>> | null = null;
             try {
                 verifyResult = await client.invoke(new Api.channels.GetParticipant({ channel, participant: inputUser }));
             } catch (checkErr: any) {
-                const notAdded = new Error("User was not added to channel");
-                Object.assign(notAdded, { errorMessage: "USER_NOT_PARTICIPANT_AFTER_INVITE" });
-                throw notAdded;
+                if (checkErr?.errorMessage === "USER_NOT_PARTICIPANT") {
+                    const notAdded = new Error("User was not added to channel");
+                    Object.assign(notAdded, { errorMessage: "USER_NOT_PARTICIPANT_AFTER_INVITE" });
+                    throw notAdded;
+                }
+                // Couldn't verify, but the invite itself succeeded — treat as added.
+                return;
             }
             if (
                 verifyResult.participant instanceof Api.ChannelParticipantBanned ||

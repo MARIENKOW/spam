@@ -176,6 +176,7 @@ export const ENDPOINT = {
             history: { path: "history" },
             start: { path: "start" },
             stop: { path: "stop" },
+            reset: { path: "reset" },
         },
         ownedChannels: {
             path: "owned-channels",

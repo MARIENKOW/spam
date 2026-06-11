@@ -3,14 +3,13 @@
 import { ChannelSearch } from "@/app/[locale]/(admin)/(dashboard)/(dashboard)/tg-accounts/[id]/broadcast/ChannelSearch";
 import { useConfirm } from "@/hooks/useConfirm";
 import {
+    useFetchChannelRecipients,
     useRemoveBroadcastChannel,
-    useResetBroadcast,
     useStartBroadcast,
     useUpdateBroadcastMessage,
 } from "@/hooks/tanstack/useBroadcastMutations";
 import { BroadcastDto } from "@myorg/shared/dto";
 import {
-    Alert,
     Avatar,
     Box,
     Chip,
@@ -21,17 +20,21 @@ import {
     ListItem,
     ListItemAvatar,
     ListItemText,
+    Tooltip,
     Typography,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import DeleteIcon from "@mui/icons-material/Delete";
+import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 import PeopleIcon from "@mui/icons-material/People";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { StyledButton } from "@/components/ui/StyledButton";
 import { StyledTextField } from "@/components/ui/StyledTextField";
 import { StyledTypography } from "@/components/ui/StyledTypography";
+import AccountBreadcrumbs from "@/components/features/Breadcrumbs/AccountBreadcrumbs";
+import { FULL_PATH_ROUTE } from "@myorg/shared/route";
 
 interface Props {
     accountId: string;
@@ -47,8 +50,12 @@ export default function BroadcastDraftView({ accountId, broadcast }: Props) {
 
     const { mutate: updateMessage } = useUpdateBroadcastMessage(accountId);
     const { mutate: removeChannel, isPending: isRemoving } = useRemoveBroadcastChannel(accountId);
+    const {
+        mutate: fetchRecipients,
+        isPending: isFetching,
+        variables: fetchingChannelId,
+    } = useFetchChannelRecipients(accountId);
     const { mutate: start, isPending: isStarting } = useStartBroadcast(accountId);
-    const { mutate: reset, isPending: isResetting } = useResetBroadcast(accountId);
 
     useEffect(() => {
         if (isFirstRender.current) {
@@ -65,14 +72,8 @@ export default function BroadcastDraftView({ accountId, broadcast }: Props) {
     }, [message]);
 
     const pendingCount = broadcast.progress.pending;
-    const isDone = broadcast.status === "COMPLETED" ||
-        (broadcast.status === "STOPPED" && pendingCount === 0);
 
     const handleStart = async () => {
-        if (isDone) {
-            reset();
-            return;
-        }
         const ok = await confirm({
             title: t("pages.admin.tgAccounts.broadcast.actions.confirmStart"),
             description: t("pages.admin.tgAccounts.broadcast.actions.confirmStartBody", {
@@ -83,9 +84,15 @@ export default function BroadcastDraftView({ accountId, broadcast }: Props) {
         start();
     };
 
+    const canStart =
+        !!message.trim() &&
+        broadcast.channels.length > 0 &&
+        pendingCount > 0;
+
     return (
         <Box display="flex" flexDirection="column" gap={3}>
             {confirmDialog}
+            <AccountBreadcrumbs accountId={accountId} extra={[{ name: t("pages.admin.tgAccounts.broadcast.name"), href: `${FULL_PATH_ROUTE.admin.tgAccounts.path}/${accountId}/broadcast` }]} />
 
             <Box>
                 <StyledTypography variant="h5" fontWeight={700} mb={3}>
@@ -124,14 +131,32 @@ export default function BroadcastDraftView({ accountId, broadcast }: Props) {
                                     disablePadding
                                     sx={{ py: 1 }}
                                     secondaryAction={
-                                        <IconButton
-                                            size="small"
-                                            color="error"
-                                            onClick={() => removeChannel(channel.id)}
-                                            disabled={isRemoving}
-                                        >
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
+                                        <Box display="flex" gap={0.5}>
+                                            <Tooltip title={t("pages.admin.tgAccounts.broadcast.channels.fetchRecipientsBtn")}>
+                                                <span>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => fetchRecipients(channel.id)}
+                                                        disabled={isFetching && fetchingChannelId === channel.id}
+                                                    >
+                                                        {isFetching && fetchingChannelId === channel.id ? (
+                                                            <CircularProgress size={14} />
+                                                        ) : (
+                                                            <PersonSearchIcon fontSize="small" />
+                                                        )}
+                                                    </IconButton>
+                                                </span>
+                                            </Tooltip>
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={() => removeChannel(channel.id)}
+                                                disabled={isRemoving}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </Box>
                                     }
                                 >
                                     <ListItemAvatar>
@@ -163,12 +188,36 @@ export default function BroadcastDraftView({ accountId, broadcast }: Props) {
                                                     alignItems="center"
                                                     gap={0.5}
                                                 >
-                                                    {channel.recipientCount !== null ? (
+                                                    {channel.fetchError ? (
                                                         <>
-                                                            <PeopleIcon sx={{ fontSize: 12 }} />
+                                                            <ErrorOutlineIcon sx={{ fontSize: 12 }} />
+                                                            {channel.fetchError}
+                                                        </>
+                                                    ) : channel.recipientCount !== null ? (
+                                                        <>
+                                                            <PeopleIcon
+                                                                sx={{
+                                                                    fontSize: 12,
+                                                                    color: channel.recipientCount === 0 ? "warning.main" : undefined,
+                                                                }}
+                                                            />
                                                             {t("pages.admin.tgAccounts.broadcast.channels.recipients", {
                                                                 count: channel.recipientCount,
                                                             })}
+                                                            {channel.giftCount !== null && (
+                                                                <Typography
+                                                                    component="span"
+                                                                    variant="caption"
+                                                                    color="text.disabled"
+                                                                    ml={0.5}
+                                                                >
+                                                                    (
+                                                                    {t("pages.admin.tgAccounts.broadcast.channels.gifts", {
+                                                                        count: channel.giftCount,
+                                                                    })}
+                                                                    )
+                                                                </Typography>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <>
@@ -206,31 +255,17 @@ export default function BroadcastDraftView({ accountId, broadcast }: Props) {
                 </Box>
             )}
 
-            {isDone && (
-                <Alert severity="info" sx={{ py: 0.5 }}>
-                    {t("pages.admin.tgAccounts.broadcast.actions.newRunHint")}
-                </Alert>
-            )}
-
             <Box>
                 <StyledButton
                     variant="contained"
-                    color={isDone ? "warning" : "primary"}
-                    startIcon={isDone ? <RefreshIcon /> : <PlayArrowIcon />}
+                    startIcon={<PlayArrowIcon />}
+                    fullWidth
                     onClick={handleStart}
-                    loading={isStarting || isResetting}
-                    disabled={
-                        !isDone && (
-                            !message.trim() ||
-                            broadcast.channels.length === 0 ||
-                            pendingCount === 0
-                        )
-                    }
+                    loading={isStarting}
+                    disabled={!canStart}
                     size="large"
                 >
-                    {isDone
-                        ? t("pages.admin.tgAccounts.broadcast.actions.newRun")
-                        : t("pages.admin.tgAccounts.broadcast.actions.start")}
+                    {t("pages.admin.tgAccounts.broadcast.actions.start")}
                 </StyledButton>
             </Box>
         </Box>

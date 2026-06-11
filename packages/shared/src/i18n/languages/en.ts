@@ -500,6 +500,8 @@ export const en: MessageStructure = {
                 },
                 broadcast: {
                     name: "Broadcast",
+                    runTitle: "Run #{n}",
+                    openRun: "Open",
                     runs: "{count} broadcasts",
                     runsZero: "No broadcasts",
                     progress: "{sent} of {total}",
@@ -521,7 +523,9 @@ export const en: MessageStructure = {
                         add: "Add",
                         remove: "Remove",
                         members: "{count} members",
-                        recipients: "{count} gifts",
+                        recipients: "{count} donors",
+                        gifts: "{count} gifts",
+                        fetchRecipientsBtn: "Load recipients",
                         fetchingRecipients: "Fetching gifts...",
                     },
                     recipients: {
@@ -533,6 +537,9 @@ export const en: MessageStructure = {
                         listTitle: "Recipients",
                         failedTitle: "Failed",
                     },
+                    filter: {
+                        all: "All",
+                    },
                     status: {
                         DRAFT: "Draft",
                         RUNNING: "Running",
@@ -541,6 +548,7 @@ export const en: MessageStructure = {
                         PENDING: "Pending",
                         SENT: "Sent",
                         FAILED: "Failed",
+                        CANCELLED: "Cancelled",
                     },
                     actions: {
                         start: "Start broadcast",
@@ -588,9 +596,11 @@ export const en: MessageStructure = {
                         sentList: "{count} sent",
                         failedList: "{count} failed",
                         pendingList: "{count} pending",
+                        cancelledList: "{count} cancelled",
                         channels: "Channels",
                         message: "Message",
                         recipientsDialogTitle: "Recipients",
+                        duration: "Duration: {value}",
                     },
                 },
             },

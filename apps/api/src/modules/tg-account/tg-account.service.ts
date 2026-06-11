@@ -655,7 +655,7 @@ export class TgAccountService implements OnModuleDestroy {
             .map((a) => a.broadcast!.id)
             .filter(Boolean) as string[];
 
-        const broadcastProgressMap = new Map<string, { sent: number; total: number }>();
+        const broadcastProgressMap = new Map<string, { sent: number; failed: number; total: number }>();
 
         if (runningBroadcastIds.length > 0) {
             const broadcasts = await this.prisma.broadcast.findMany({
@@ -668,15 +668,12 @@ export class TgAccountService implements OnModuleDestroy {
 
             await Promise.all(
                 broadcasts.map(async (b) => {
-                    const [sent, total] = await Promise.all([
-                        this.prisma.broadcastRecipient.count({
-                            where: { broadcastId: b.id, status: "SENT" },
-                        }),
-                        this.prisma.broadcastRecipient.count({
-                            where: { broadcastId: b.id },
-                        }),
+                    const [sent, pending, failed] = await Promise.all([
+                        this.prisma.broadcastRecipient.count({ where: { broadcastId: b.id, status: "SENT" } }),
+                        this.prisma.broadcastRecipient.count({ where: { broadcastId: b.id, status: "PENDING" } }),
+                        this.prisma.broadcastRecipient.count({ where: { broadcastId: b.id, status: "FAILED" } }),
                     ]);
-                    broadcastProgressMap.set(b.tgAccountId, { sent, total });
+                    broadcastProgressMap.set(b.tgAccountId, { sent, failed, total: sent + pending + failed });
                 }),
             );
         }
@@ -724,7 +721,17 @@ export class TgAccountService implements OnModuleDestroy {
             inviteProgress = { invited: sent, failed, total: sent + pending + failed };
         }
 
-        return mapTgAccount(account, null, inviteProgress);
+        let broadcastProgress: { sent: number; failed: number; total: number } | null = null;
+        if (account.broadcast?.status === "RUNNING") {
+            const [sent, pending, failed] = await Promise.all([
+                this.prisma.broadcastRecipient.count({ where: { broadcastId: account.broadcast.id, status: "SENT" } }),
+                this.prisma.broadcastRecipient.count({ where: { broadcastId: account.broadcast.id, status: "PENDING" } }),
+                this.prisma.broadcastRecipient.count({ where: { broadcastId: account.broadcast.id, status: "FAILED" } }),
+            ]);
+            broadcastProgress = { sent, failed, total: sent + pending + failed };
+        }
+
+        return mapTgAccount(account, broadcastProgress, inviteProgress);
     }
 
     async delete(id: string, adminId: string, role: RoleAdmin): Promise<void> {

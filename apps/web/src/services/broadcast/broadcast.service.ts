@@ -35,6 +35,7 @@ export default class BroadcastService {
         params: { page: number; limit: number; status?: string },
     ) => FetchCustomReturn<PagedResult<BroadcastRecipientDto>>;
     getHistory: (accountId: string) => FetchCustomReturn<BroadcastRunDto[]>;
+    getRun: (accountId: string, runId: string) => FetchCustomReturn<BroadcastRunDto>;
     getRunRecipients: (
         accountId: string,
         runId: string,
@@ -99,6 +100,9 @@ export default class BroadcastService {
             api<BroadcastRunDto[]>(`${broadcastPath(accountId)}/history`, {
                 method: "GET",
             });
+
+        this.getRun = (accountId, runId) =>
+            api<BroadcastRunDto>(`${broadcastPath(accountId)}/history/${runId}`, { method: "GET" });
 
         this.getRunRecipients = (accountId, runId, params) => {
             const query = toSearchParams(params);

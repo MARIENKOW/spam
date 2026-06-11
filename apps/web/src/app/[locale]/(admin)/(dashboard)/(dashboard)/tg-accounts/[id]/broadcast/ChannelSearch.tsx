@@ -68,6 +68,7 @@ export function ChannelSearch({ accountId, existingChannels }: Props) {
         if (isAlreadyAdded(channel.telegramId)) return;
         addChannel({
             telegramId: channel.telegramId,
+            accessHash: channel.accessHash,
             username: channel.username,
             title: channel.title,
             photoBase64: channel.photoBase64,

@@ -7,18 +7,52 @@ import {
 import { BroadcastService } from "@/modules/broadcast/broadcast.service";
 import { BroadcastTgService } from "@/modules/broadcast/broadcast.tg.service";
 
-const SEND_DELAY_BASE_MS = 3 * 60 * 1000;       // 3 minutes
-const SEND_DELAY_RANDOM_MS = 60 * 1000;          // up to +1 minute
-const FLOOD_WAIT_BUFFER_MS = 2_000;              // extra buffer after flood wait
+const SEND_DELAY_BASE_MS = 3 * 60 * 1000;
+const SEND_DELAY_RANDOM_MS = 60 * 1000;
+const FLOOD_WAIT_BUFFER_MS = 2_000;
+const MAX_TRANSIENT_RETRIES = 3;
+const TRANSIENT_RETRY_BASE_MS = 30 * 1000;
+
+function isFloodWait(err: any): boolean {
+    return err?.className === "FloodWaitError" || err?.code === 420;
+}
+
+// Per-recipient permanent errors — retrying this user will never help
+const PERMANENT_RECIPIENT_ERRORS = new Set([
+    "USER_PRIVACY_RESTRICTED",
+    "USER_IS_BLOCKED",
+    "USER_BLOCKED",
+    "YOU_BLOCKED_USER",
+    "USER_DEACTIVATED",
+    "USER_DEACTIVATED_BAN",
+    "INPUT_USER_DEACTIVATED",
+    "USER_ID_INVALID",
+    "PEER_ID_INVALID",
+    "USER_IS_BOT",
+    "CHAT_WRITE_FORBIDDEN",
+    // Account-level — no point retrying the same user
+    "PEER_FLOOD",
+]);
 
 function randomDelay(): number {
     return SEND_DELAY_BASE_MS + Math.floor(Math.random() * SEND_DELAY_RANDOM_MS);
+}
+
+function serializeError(err: any): Record<string, unknown> {
+    return {
+        name: err.name,
+        message: err.message,
+        errorMessage: err.errorMessage,
+        code: err.code,
+        seconds: err.seconds,
+    };
 }
 
 @Injectable()
 export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(BroadcastWorker.name);
     private readonly activeTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+    private readonly transientRetries = new Map<string, number>();
 
     constructor(
         private readonly broadcastService: BroadcastService,
@@ -36,8 +70,6 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
         this.activeTimeouts.clear();
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
-
     schedule(broadcastId: string, delayMs = 0): void {
         this.cancelIfActive(broadcastId);
 
@@ -51,8 +83,6 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
     cancel(broadcastId: string): void {
         this.cancelIfActive(broadcastId);
     }
-
-    // ── Core loop ─────────────────────────────────────────────────────────────
 
     private async processNext(broadcastId: string): Promise<void> {
         this.activeTimeouts.delete(broadcastId);
@@ -74,12 +104,14 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
                 "Missing access hash — re-fetch channel recipients and start a new broadcast",
             );
             this.logger.warn(`Broadcast ${broadcastId}: skipped ${recipient.userId} — no access hash`);
-            this.schedule(broadcastId, 0);
+            await this.continueOrFinish(broadcastId, 0);
             return;
         }
 
-        let delayMs = randomDelay();
+        const delayMs = randomDelay();
 
+        // Isolate the API call so a DB-write failure can't masquerade as a send failure
+        let apiError: any = null;
         try {
             await this.tg.sendMessage(
                 broadcast.tgAccountId,
@@ -87,35 +119,78 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
                 recipient.accessHash,
                 broadcast.message,
             );
-            await this.broadcastService.markRecipientSent(recipient.id);
-            this.logger.log(`Broadcast ${broadcastId}: sent to ${recipient.userId}`);
         } catch (err: any) {
-            // Telegram flood wait — respect the required delay
-            if (err.errorMessage === "FLOOD_WAIT" && err.seconds) {
-                const floodDelayMs = err.seconds * 1000 + FLOOD_WAIT_BUFFER_MS;
-                this.logger.warn(
-                    `Broadcast ${broadcastId}: flood wait ${err.seconds}s — rescheduling`,
+            apiError = err;
+        }
+
+        if (apiError) {
+            const msg: string = apiError.errorMessage ?? "";
+
+            // FloodWait — record the error but keep recipient PENDING for retry
+            if (isFloodWait(apiError)) {
+                const floodDelayMs = (apiError.seconds ?? 60) * 1000 + FLOOD_WAIT_BUFFER_MS;
+                await this.broadcastService.noteRecipientError(
+                    recipient.id,
+                    `FLOOD_WAIT ${apiError.seconds}s`,
+                    serializeError(apiError),
                 );
+                this.logger.warn(`Broadcast ${broadcastId}: flood wait ${apiError.seconds}s — rescheduling`);
                 this.schedule(broadcastId, floodDelayMs);
                 return;
             }
 
-            await this.broadcastService.markRecipientFailed(recipient.id, err.message ?? "Unknown error");
-            this.logger.warn(`Broadcast ${broadcastId}: failed for ${recipient.userId} — ${err.message}`);
-        }
+            // Known permanent per-recipient failures — no point retrying
+            if (PERMANENT_RECIPIENT_ERRORS.has(msg)) {
+                await this.broadcastService.markRecipientFailed(recipient.id, msg, serializeError(apiError));
+                this.logger.warn(`Broadcast ${broadcastId}: ${recipient.userId} — ${msg}`);
+                await this.continueOrFinish(broadcastId, delayMs);
+                return;
+            }
 
-        // Complete immediately if no more pending recipients, otherwise schedule next
-        const hasMore = await this.broadcastService.hasPendingRecipients(broadcastId);
-        if (!hasMore) {
-            await this.broadcastService.markCompleted(broadcastId);
-            this.logger.log(`Broadcast ${broadcastId} completed`);
+            // Unknown/transient error — retry with linear backoff up to the limit
+            const attempts = (this.transientRetries.get(recipient.id) ?? 0) + 1;
+            if (attempts <= MAX_TRANSIENT_RETRIES) {
+                this.transientRetries.set(recipient.id, attempts);
+                const retryMs = TRANSIENT_RETRY_BASE_MS * attempts;
+                this.logger.warn(`Broadcast ${broadcastId}: transient error (try ${attempts}) — ${apiError.message}`);
+                this.schedule(broadcastId, retryMs);
+                return;
+            }
+
+            this.transientRetries.delete(recipient.id);
+            await this.broadcastService.markRecipientFailed(
+                recipient.id,
+                apiError.message ?? "Unknown error",
+                serializeError(apiError),
+            );
+            this.logger.error(`Broadcast ${broadcastId}: giving up on ${recipient.userId} — ${apiError.message}`);
+            await this.continueOrFinish(broadcastId, delayMs);
             return;
         }
 
-        this.schedule(broadcastId, delayMs);
+        // Send succeeded — DB write is separate so its failure doesn't mark the recipient failed
+        this.transientRetries.delete(recipient.id);
+        try {
+            await this.broadcastService.markRecipientSent(recipient.id);
+            this.logger.log(`Broadcast ${broadcastId}: sent to ${recipient.userId}`);
+        } catch (dbErr: any) {
+            this.logger.error(
+                `Broadcast ${broadcastId}: sent but DB write failed for ${recipient.userId}`,
+                dbErr,
+            );
+        }
+
+        await this.continueOrFinish(broadcastId, delayMs);
     }
 
-    // ── Resume on startup ─────────────────────────────────────────────────────
+    private async continueOrFinish(broadcastId: string, delayMs: number): Promise<void> {
+        if (await this.broadcastService.hasPendingRecipients(broadcastId)) {
+            this.schedule(broadcastId, delayMs);
+        } else {
+            await this.broadcastService.markCompleted(broadcastId);
+            this.logger.log(`Broadcast ${broadcastId} completed`);
+        }
+    }
 
     private async resumeRunningBroadcasts(): Promise<void> {
         try {
@@ -128,8 +203,6 @@ export class BroadcastWorker implements OnModuleInit, OnModuleDestroy {
             this.logger.error("Failed to resume running broadcasts", err);
         }
     }
-
-    // ── Private ───────────────────────────────────────────────────────────────
 
     private cancelIfActive(broadcastId: string): void {
         const existing = this.activeTimeouts.get(broadcastId);

@@ -224,7 +224,7 @@ export default function TgAccountCard({ account, showOwner }: Props) {
                                 size="small"
                                 icon={<CampaignIcon sx={{ fontSize: "14px !important" }} />}
                                 label={t("pages.admin.tgAccounts.broadcast.progress", {
-                                    sent: account.broadcastProgress.sent,
+                                    sent: account.broadcastProgress.sent + account.broadcastProgress.failed,
                                     total: account.broadcastProgress.total,
                                 })}
                                 color="warning"

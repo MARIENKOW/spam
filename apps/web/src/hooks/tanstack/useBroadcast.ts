@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { broadcastKeys } from "@/lib/tanstack/keys";
 import BroadcastService from "@/services/broadcast/broadcast.service";
 import { $apiAdminClient } from "@/utils/api/admin/fetch.admin.client";
@@ -16,10 +17,32 @@ export function useBroadcast(accountId: string) {
             const data = query.state.data;
             if (!data) return false;
             if (data.status === "RUNNING") return 5_000;
-            if (data.channels.some((c) => c.recipientCount === null)) return 3_000;
+            if (data.channels.some((c) => c.recipientCount === null && !c.fetchError)) return 3_000;
             return false;
         },
     });
+}
+
+export function useBroadcastRun(accountId: string, runId: string) {
+    const queryClient = useQueryClient();
+    const query = useQuery({
+        queryKey: broadcastKeys.run(accountId, runId),
+        queryFn: () => service.getRun(accountId, runId).then((r) => r.data),
+        enabled: !!accountId && !!runId,
+        refetchInterval: (query) => {
+            const data = query.state.data;
+            if (!data) return false;
+            return data.status === "RUNNING" ? 5_000 : false;
+        },
+    });
+
+    useEffect(() => {
+        if (query.data?.status === "COMPLETED" || query.data?.status === "STOPPED") {
+            queryClient.invalidateQueries({ queryKey: broadcastKeys.detail(accountId) });
+        }
+    }, [query.data?.status, accountId, queryClient]);
+
+    return query;
 }
 
 export function useBroadcastProgress(accountId: string, enabled: boolean) {

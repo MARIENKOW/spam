@@ -3,6 +3,8 @@
 import { useTgAccountDetail, useOwnedChannels, useSyncOwnedChannels } from "@/hooks/tanstack/useTgAccountDetail";
 import { useInviteHistory } from "@/hooks/tanstack/useInvite";
 import { useDeleteAllInviteRuns, useDeleteInviteRun } from "@/hooks/tanstack/useInviteMutations";
+import { useBroadcastHistory } from "@/hooks/tanstack/useBroadcast";
+import { useDeleteAllBroadcastRuns, useDeleteBroadcastRun } from "@/hooks/tanstack/useBroadcastMutations";
 import { useConfirm } from "@/hooks/useConfirm";
 import {
     Avatar,
@@ -21,6 +23,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import StarIcon from "@mui/icons-material/Star";
 import GroupIcon from "@mui/icons-material/Group";
 import GroupAddIcon from "@mui/icons-material/GroupAdd";
+import CampaignIcon from "@mui/icons-material/Campaign";
 import AddIcon from "@mui/icons-material/Add";
 import HistoryIcon from "@mui/icons-material/History";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
@@ -40,7 +43,7 @@ import { FULL_PATH_ROUTE } from "@myorg/shared/route";
 import { ClientDate } from "@/components/common/ClientDate";
 import { relativeTime, formatDuration } from "@myorg/shared/utils";
 import { useLocale } from "next-intl";
-import { InviteRunDto } from "@myorg/shared/dto";
+import { BroadcastRunDto, InviteRunDto } from "@myorg/shared/dto";
 import AccountBreadcrumbs from "@/components/features/Breadcrumbs/AccountBreadcrumbs";
 
 const TG_AVATAR_COLORS = [
@@ -224,6 +227,164 @@ function RunRow({ accountId, run, onDelete, isDeleting }: RunRowProps) {
     );
 }
 
+interface BroadcastRunRowProps {
+    accountId: string;
+    run: BroadcastRunDto;
+    onDelete: (runId: string) => void;
+    isDeleting: boolean;
+}
+
+function BroadcastRunRow({ accountId, run, onDelete, isDeleting }: BroadcastRunRowProps) {
+    const t = useTranslations();
+    const locale = useLocale();
+    const isRunning = run.status === "RUNNING";
+    const isCompleted = run.status === "COMPLETED";
+
+    const href = `${FULL_PATH_ROUTE.admin.tgAccounts.path}/${accountId}/broadcast/${run.id}`;
+
+    return (
+        <Box
+            sx={{
+                px: 1.5,
+                py: 1,
+                borderRadius: 1.5,
+                border: 1,
+                borderColor: "divider",
+                borderLeft: 3,
+                borderLeftColor: isRunning ? "info.main" : isCompleted ? "success.main" : "warning.main",
+                bgcolor: "action.hover",
+                display: "flex",
+                flexDirection: "column",
+                gap: 0.75,
+            }}
+        >
+            <Box display="flex" alignItems="center" justifyContent="space-between" gap={1}>
+                <Box display="flex" alignItems="center" gap={0.75}>
+                    <StyledTypography variant="body2" fontWeight={700}>
+                        #{run.runNumber}
+                    </StyledTypography>
+                    <Chip
+                        size="small"
+                        label={t(`pages.admin.tgAccounts.broadcast.status.${run.status}`)}
+                        color={isRunning ? "info" : isCompleted ? "success" : "warning"}
+                        variant="filled"
+                        sx={{ height: 20, fontSize: 11 }}
+                    />
+                </Box>
+                <Box display="flex" alignItems="center" gap={0.5} flexShrink={0}>
+                    <Link href={href} style={{ textDecoration: "none", color: "inherit" }}>
+                        <IconButton size="small">
+                            <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                    </Link>
+                    {!isRunning && (
+                        <Tooltip title={t("pages.admin.tgAccounts.broadcast.history.delete")}>
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => onDelete(run.id)}
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting
+                                        ? <CircularProgress size={14} color="error" />
+                                        : <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                                    }
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    )}
+                </Box>
+            </Box>
+
+            {run.message && (
+                <StyledTypography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        lineHeight: 1.4,
+                    }}
+                >
+                    {run.message}
+                </StyledTypography>
+            )}
+
+            <Box display="flex" alignItems={'start'} flexDirection="column" gap={0.25}>
+                <ClientDate
+                    date={run.startedAt}
+                    format={(date, locale) =>
+                        t("pages.admin.tgAccounts.broadcast.history.started", {
+                            time: relativeTime({ date, locale }),
+                        })
+                    }
+                    variant="caption"
+                    color="text.disabled"
+                />
+                {!isRunning && run.finishedAt && (
+                    <StyledTypography variant="caption" color="text.disabled">
+                        {t("pages.admin.tgAccounts.broadcast.history.duration" as any, {
+                            value: formatDuration(
+                                new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime(),
+                                locale as any,
+                            ),
+                        })}
+                    </StyledTypography>
+                )}
+            </Box>
+
+            {!isRunning && (run.sentCount > 0 || run.failedCount > 0 || run.pendingCount > 0) && (
+                <Box display="flex" gap={0.5}>
+                    {run.sentCount > 0 && (
+                        <Chip
+                            size="small"
+                            icon={<CheckCircleOutlineIcon sx={{ fontSize: "11px !important" }} />}
+                            label={run.sentCount}
+                            color="success"
+                            variant="filled"
+                            sx={{ height: 18, fontSize: 10 }}
+                        />
+                    )}
+                    {run.failedCount > 0 && (
+                        <Chip
+                            size="small"
+                            icon={<ErrorOutlineIcon sx={{ fontSize: "11px !important" }} />}
+                            label={run.failedCount}
+                            color="error"
+                            variant="filled"
+                            sx={{ height: 18, fontSize: 10 }}
+                        />
+                    )}
+                    {run.pendingCount > 0 && (
+                        <Chip
+                            size="small"
+                            icon={<RemoveCircleOutlineIcon sx={{ fontSize: "11px !important" }} />}
+                            label={run.pendingCount}
+                            color="warning"
+                            variant="filled"
+                            sx={{ height: 18, fontSize: 10 }}
+                        />
+                    )}
+                </Box>
+            )}
+
+            {isRunning && run.totalCount > 0 && (
+                <LinearProgress
+                    variant="determinate"
+                    value={Math.round(((run.sentCount + run.failedCount) / run.totalCount) * 100)}
+                    sx={{ height: 4, borderRadius: 2 }}
+                    color="info"
+                />
+            )}
+        </Box>
+    );
+}
+
 interface Props {
     accountId: string;
 }
@@ -236,9 +397,13 @@ export default function TgAccountDetailComponent({ accountId }: Props) {
     const { data: inviteHistory } = useInviteHistory(accountId);
     const { mutate: deleteRun, isPending: isDeletingRun, variables: deletingRunId } = useDeleteInviteRun(accountId);
     const { mutate: deleteAllRuns, isPending: isDeletingAll } = useDeleteAllInviteRuns(accountId);
+    const { data: broadcastHistory } = useBroadcastHistory(accountId);
+    const { mutate: deleteBroadcastRun, isPending: isDeletingBroadcastRun, variables: deletingBroadcastRunId } = useDeleteBroadcastRun(accountId);
+    const { mutate: deleteAllBroadcastRuns, isPending: isDeletingAllBroadcast } = useDeleteAllBroadcastRuns(accountId);
     const { confirm, confirmDialog } = useConfirm();
 
     const inviteHref = `${FULL_PATH_ROUTE.admin.tgAccounts.path}/${accountId}/invite`;
+    const broadcastHref = `${FULL_PATH_ROUTE.admin.tgAccounts.path}/${accountId}/broadcast`;
 
     if (isLoading) {
         return (
@@ -261,6 +426,10 @@ export default function TgAccountDetailComponent({ accountId }: Props) {
     const runningRun = inviteHistory?.find((r) => r.status === "RUNNING");
     const finishedRuns = inviteHistory?.filter((r) => r.status !== "RUNNING") ?? [];
 
+    const isBroadcastRunning = account.broadcastStatus === "RUNNING";
+    const runningBroadcastRun = broadcastHistory?.find((r) => r.status === "RUNNING");
+    const finishedBroadcastRuns = broadcastHistory?.filter((r) => r.status !== "RUNNING") ?? [];
+
     const handleDeleteRun = async (runId: string) => {
         const ok = await confirm({
             title: t("pages.admin.tgAccounts.invite.history.confirmDelete"),
@@ -277,6 +446,24 @@ export default function TgAccountDetailComponent({ accountId }: Props) {
         });
         if (!ok) return;
         deleteAllRuns();
+    };
+
+    const handleDeleteBroadcastRun = async (runId: string) => {
+        const ok = await confirm({
+            title: t("pages.admin.tgAccounts.broadcast.history.confirmDelete"),
+            description: t("pages.admin.tgAccounts.broadcast.history.confirmDeleteBody"),
+        });
+        if (!ok) return;
+        deleteBroadcastRun(runId);
+    };
+
+    const handleDeleteAllBroadcastRuns = async () => {
+        const ok = await confirm({
+            title: t("pages.admin.tgAccounts.broadcast.history.confirmClearAll"),
+            description: t("pages.admin.tgAccounts.broadcast.history.confirmClearAllBody"),
+        });
+        if (!ok) return;
+        deleteAllBroadcastRuns();
     };
 
     return (
@@ -414,8 +601,8 @@ export default function TgAccountDetailComponent({ accountId }: Props) {
                     </Card>
                 </Box>
 
-                {/* Right column: invite */}
-                <Box flex={1} minWidth={0}>
+                {/* Right column: invite + broadcast */}
+                <Box flex={1} minWidth={0} display="flex" flexDirection="column" gap={3}>
             <Card sx={{ borderRadius: 3 }}>
                 <CardContent sx={{ p: 3 }}>
                     <Box display="flex" alignItems="center" gap={1} mb={2}>
@@ -561,6 +748,139 @@ export default function TgAccountDetailComponent({ accountId }: Props) {
                                 fullWidth
                             >
                                 {t("pages.admin.tgAccounts.ownedChannels.addToChannel")}
+                            </StyledButton>
+                        </Link>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card sx={{ borderRadius: 3 }}>
+                <CardContent sx={{ p: 3 }}>
+                    <Box display="flex" alignItems="center" gap={1} mb={2}>
+                        <CampaignIcon color="action" />
+                        <StyledTypography variant="subtitle1" fontWeight={600}>
+                            {t("pages.admin.tgAccounts.broadcast.name")}
+                        </StyledTypography>
+                    </Box>
+
+                    {/* Running state: compact progress + link */}
+                    {isBroadcastRunning && runningBroadcastRun && (
+                        <Box
+                            mb={2}
+                            p={1.5}
+                            sx={{
+                                borderRadius: 2,
+                                border: 1,
+                                borderColor: "info.main",
+                                bgcolor: "action.hover",
+                            }}
+                        >
+                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1} gap={1}>
+                                <Box display="flex" alignItems="center" gap={0.75} flexWrap="wrap" minWidth={0}>
+                                    <StyledTypography variant="body2" fontWeight={700}>
+                                        #{runningBroadcastRun.runNumber}
+                                    </StyledTypography>
+                                    <Chip
+                                        size="small"
+                                        icon={<StopIcon sx={{ fontSize: "12px !important" }} />}
+                                        label={t("pages.admin.tgAccounts.broadcast.status.RUNNING")}
+                                        color="info"
+                                        variant="filled"
+                                        sx={{ height: 20, fontSize: 11 }}
+                                    />
+                                </Box>
+                                <Link href={`${broadcastHref}/${runningBroadcastRun.id}`} style={{ textDecoration: "none" }}>
+                                    <Chip
+                                        size="small"
+                                        label={t("pages.admin.tgAccounts.broadcast.openRun")}
+                                        color="info"
+                                        variant="outlined"
+                                        clickable
+                                        sx={{ fontSize: 11 }}
+                                    />
+                                </Link>
+                            </Box>
+                            {account.broadcastProgress && (
+                                <>
+                                    <Box display="flex" justifyContent="space-between" mb={0.5}>
+                                        <StyledTypography variant="caption" color="text.secondary">
+                                            {account.broadcastProgress.sent + account.broadcastProgress.failed} / {account.broadcastProgress.total}
+                                        </StyledTypography>
+                                        <StyledTypography variant="caption" color="text.secondary">
+                                            {account.broadcastProgress.total > 0
+                                                ? Math.round(((account.broadcastProgress.sent + account.broadcastProgress.failed) / account.broadcastProgress.total) * 100)
+                                                : 0}%
+                                        </StyledTypography>
+                                    </Box>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={account.broadcastProgress.total > 0
+                                            ? Math.round(((account.broadcastProgress.sent + account.broadcastProgress.failed) / account.broadcastProgress.total) * 100)
+                                            : 0}
+                                        color="info"
+                                        sx={{ height: 6, borderRadius: 3 }}
+                                    />
+                                </>
+                            )}
+                        </Box>
+                    )}
+
+                    {/* History list */}
+                    {finishedBroadcastRuns.length > 0 && (
+                        <Box display="flex" flexDirection="column" gap={0.75} mb={2}>
+                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                    <HistoryIcon color="action" sx={{ fontSize: 14 }} />
+                                    <StyledTypography variant="caption" color="text.secondary" fontWeight={600}>
+                                        {t("pages.admin.tgAccounts.broadcast.history.title")}
+                                    </StyledTypography>
+                                    <Chip size="small" label={finishedBroadcastRuns.length} sx={{ height: 16, fontSize: 10 }} />
+                                </Box>
+                                <Tooltip title={t("pages.admin.tgAccounts.broadcast.history.clearAll")}>
+                                    <span>
+                                        <IconButton
+                                            size="small"
+                                            color="error"
+                                            onClick={handleDeleteAllBroadcastRuns}
+                                            disabled={isDeletingAllBroadcast}
+                                        >
+                                            {isDeletingAllBroadcast
+                                                ? <CircularProgress size={14} color="error" />
+                                                : <DeleteSweepIcon sx={{ fontSize: 18 }} />
+                                            }
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Box>
+                            <Box
+                                display="flex"
+                                flexDirection="column"
+                                gap={0.75}
+                                sx={{ maxHeight: 280, overflowY: "auto", pr: 0.5 }}
+                            >
+                                {finishedBroadcastRuns.map((run) => (
+                                    <BroadcastRunRow
+                                        key={run.id}
+                                        accountId={accountId}
+                                        run={run}
+                                        onDelete={handleDeleteBroadcastRun}
+                                        isDeleting={isDeletingBroadcastRun && deletingBroadcastRunId === run.id}
+                                    />
+                                ))}
+                            </Box>
+                            <Divider sx={{ mt: 1 }} />
+                        </Box>
+                    )}
+
+                    {/* New broadcast button (only when not running) */}
+                    {!isBroadcastRunning && (
+                        <Link href={broadcastHref} style={{ textDecoration: "none" }}>
+                            <StyledButton
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                fullWidth
+                            >
+                                {t("pages.admin.tgAccounts.broadcast.actions.new")}
                             </StyledButton>
                         </Link>
                     )}

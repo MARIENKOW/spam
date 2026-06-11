@@ -70,14 +70,19 @@ export class BroadcastTgService {
         channelId: string,
         telegramChannelId: string,
     ): Promise<number> {
+        await this.prisma.broadcastChannel.update({
+            where: { id: channelId },
+            data: { fetchError: null },
+        });
+
         const client = await this.createClient(tgAccountId);
 
         try {
-            const channelPeer = await client.getInputEntity(
-                telegramChannelId.startsWith("-")
-                    ? telegramChannelId
-                    : `-100${telegramChannelId}`,
-            );
+            const channel = await this.prisma.broadcastChannel.findUnique({ where: { id: channelId } });
+            const channelPeer = new Api.InputChannel({
+                channelId: bigInt(telegramChannelId),
+                accessHash: bigInt(channel?.accessHash ?? "0"),
+            });
 
             const recipients: Array<{
                 userId: string;
@@ -89,6 +94,8 @@ export class BroadcastTgService {
 
             let offset = "";
             const limit = 100;
+            const seenUserIds = new Set<string>();
+            let totalGifts = 0;
 
             while (true) {
                 const result = await client.invoke(
@@ -105,7 +112,10 @@ export class BroadcastTgService {
 
                     if (!(gift.fromId instanceof Api.PeerUser)) continue;
 
+                    totalGifts++;
                     const userId = gift.fromId.userId.toString();
+                    if (seenUserIds.has(userId)) continue;
+                    seenUserIds.add(userId);
 
                     // Find user info from the users array in the response
                     const userInfo = result.users.find(
@@ -129,7 +139,7 @@ export class BroadcastTgService {
 
             // Upsert recipients into the broadcast (deduplication by userId)
             await this.broadcastService.upsertRecipients(broadcastId, recipients);
-            await this.broadcastService.updateChannelRecipientCount(channelId, recipients.length);
+            await this.broadcastService.updateChannelRecipientCount(channelId, recipients.length, totalGifts);
 
             return recipients.length;
         } catch (err: any) {

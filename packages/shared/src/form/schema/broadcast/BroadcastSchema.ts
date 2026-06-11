@@ -12,6 +12,7 @@ export type SearchChannelOutput = z.infer<typeof SearchChannelSchema>;
 
 export const AddBroadcastChannelSchema = z.object({
     telegramId: z.string(),
+    accessHash: z.string().nullable(),
     username: z.string().nullable(),
     title: z.string(),
     photoBase64: z.string().nullable(),

@@ -14,7 +14,7 @@ export interface TgAccountDto {
     adminEmail: string;
     adminRole: "ADMIN" | "SUPERADMIN";
     broadcastStatus: "DRAFT" | "RUNNING" | "COMPLETED" | "STOPPED" | null;
-    broadcastProgress: { sent: number; total: number } | null;
+    broadcastProgress: { sent: number; failed: number; total: number } | null;
     broadcastRunCount: number;
     inviteStatus: "DRAFT" | "RUNNING" | "COMPLETED" | "STOPPED" | null;
     inviteProgress: { invited: number; failed: number; total: number } | null;

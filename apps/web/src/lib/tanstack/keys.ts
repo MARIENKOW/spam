@@ -85,6 +85,8 @@ export const broadcastKeys = {
     recipients: (accountId: string, params: object) =>
         [...broadcastKeys.all(accountId), "recipients", params] as const,
     history: (accountId: string) => [...broadcastKeys.all(accountId), "history"] as const,
+    run: (accountId: string, runId: string) =>
+        [...broadcastKeys.all(accountId), "run", runId] as const,
     runRecipients: (runId: string, params: object) =>
         ["broadcast-run-recipients", runId, params] as const,
     channelSearch: (accountId: string, query: string) =>

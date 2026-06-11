@@ -517,6 +517,8 @@ export const ru = {
                 },
                 broadcast: {
                     name: "Рассылка",
+                    runTitle: "Запуск #{n}",
+                    openRun: "Открыть",
                     runs: "{count} рассылок",
                     runsZero: "Нет рассылок",
                     progress: "{sent} из {total}",
@@ -538,7 +540,9 @@ export const ru = {
                         add: "Добавить",
                         remove: "Удалить",
                         members: "{count} участников",
-                        recipients: "{count} подарков",
+                        recipients: "{count} дарителей",
+                        gifts: "{count} подарков",
+                        fetchRecipientsBtn: "Загрузить получателей",
                         fetchingRecipients: "Получение подарков...",
                     },
                     recipients: {
@@ -550,6 +554,9 @@ export const ru = {
                         listTitle: "Получатели",
                         failedTitle: "Ошибки",
                     },
+                    filter: {
+                        all: "Все",
+                    },
                     status: {
                         DRAFT: "Черновик",
                         RUNNING: "Выполняется",
@@ -558,6 +565,7 @@ export const ru = {
                         PENDING: "Ожидает",
                         SENT: "Отправлено",
                         FAILED: "Ошибка",
+                        CANCELLED: "Отменён",
                     },
                     actions: {
                         start: "Запустить рассылку",
@@ -605,9 +613,11 @@ export const ru = {
                         sentList: "{count} отправлено",
                         failedList: "{count} ошибок",
                         pendingList: "{count} ожидает",
+                        cancelledList: "{count} отменено",
                         channels: "Каналы",
                         message: "Сообщение",
                         recipientsDialogTitle: "Получатели",
+                        duration: "Длительность: {value}",
                     },
                 },
             },

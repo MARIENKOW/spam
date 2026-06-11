@@ -21,11 +21,14 @@ model BroadcastChannel {
     broadcastId    String
     broadcast      Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
     telegramId     String
+    accessHash     String?
     username       String?
     title          String
     photoUrl       String?
     memberCount    Int?
     recipientCount Int?
+    giftCount      Int?
+    fetchError     String?
 
     @@unique([broadcastId, telegramId])
     @@index([broadcastId])
@@ -43,6 +46,7 @@ model BroadcastRecipient {
     lastName     String?
     status       RecipientStatus @default(PENDING)
     errorMessage String?
+    errorData    Json?
     sentAt       DateTime?
 
     @@unique([broadcastId, userId])
@@ -60,9 +64,10 @@ model BroadcastRun {
     status           RunStatus
     sentCount        Int       @default(0)
     failedCount      Int       @default(0)
+    pendingCount     Int       @default(0)
     totalCount       Int       @default(0)
     startedAt        DateTime
-    finishedAt       DateTime  @default(now())
+    finishedAt       DateTime?
 
     recipients BroadcastRunRecipient[]
 
@@ -75,11 +80,13 @@ model BroadcastRunRecipient {
     runId        String
     run          BroadcastRun @relation(fields: [runId], references: [id], onDelete: Cascade)
     userId       String
+    accessHash   String?
     username     String?
     firstName    String?
     lastName     String?
     status       RecipientStatus
     errorMessage String?
+    errorData    Json?
     sentAt       DateTime?
 
     @@index([runId])

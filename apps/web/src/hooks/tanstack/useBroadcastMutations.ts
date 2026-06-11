@@ -5,9 +5,13 @@ import { broadcastKeys, tgAccountKeys } from "@/lib/tanstack/keys";
 import BroadcastService from "@/services/broadcast/broadcast.service";
 import { $apiAdminClient } from "@/utils/api/admin/fetch.admin.client";
 import { errorHandler } from "@/helpers/error/error.handler.helper";
+import { isApiErrorResponse } from "@/helpers/error/error.type.helper";
+import { ApiErrorResponse } from "@myorg/shared/dto";
 import { snackbarSuccess } from "@/utils/snackbar/snackbar.success";
 import { useTranslations } from "next-intl";
 import { AddBroadcastChannelOutput } from "@myorg/shared/form";
+import { useRouter } from "@/i18n/navigation";
+import { FULL_PATH_ROUTE } from "@myorg/shared/route";
 
 const service = new BroadcastService($apiAdminClient);
 
@@ -82,13 +86,20 @@ export function useFetchChannelRecipients(accountId: string) {
 export function useStartBroadcast(accountId: string) {
     const { invalidateBroadcast, invalidateTgAccounts } = useBroadcastCache(accountId);
     const t = useTranslations();
+    const router = useRouter();
 
     return useMutation({
         mutationFn: () => service.start(accountId),
-        onSuccess: () => {
+        onSuccess: (response) => {
+            const broadcast = response.data;
             invalidateBroadcast();
             invalidateTgAccounts();
             snackbarSuccess(t("pages.admin.tgAccounts.broadcast.feedback.started"));
+            if (broadcast.currentRunId) {
+                router.push(
+                    `${FULL_PATH_ROUTE.admin.tgAccounts.path}/${accountId}/broadcast/${broadcast.currentRunId}`,
+                );
+            }
         },
         onError: (error) => errorHandler({ error, t }),
     });
@@ -105,7 +116,14 @@ export function useStopBroadcast(accountId: string) {
             invalidateTgAccounts();
             snackbarSuccess(t("pages.admin.tgAccounts.broadcast.feedback.stopped"));
         },
-        onError: (error) => errorHandler({ error, t }),
+        onError: (error) => {
+            if (isApiErrorResponse(error) && (error as unknown as ApiErrorResponse).message === "broadcast.notRunning") {
+                invalidateBroadcast();
+                invalidateTgAccounts();
+                return;
+            }
+            errorHandler({ error, t });
+        },
     });
 }
 
