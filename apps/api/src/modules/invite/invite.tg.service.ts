@@ -184,40 +184,14 @@ export class InviteTgService {
                 );
             }
 
-            // missingInvitees is present in API layer 184+ when a user can't be added silently
+            // missingInvitees is Telegram's authoritative signal: it lists the users that
+            // could NOT be added (privacy settings, join-request channels, etc.). If it's
+            // empty, the invite succeeded — we trust it and skip any further verification.
             const missingInvitees = inviteResult?.missingInvitees as Array<{ userId: { toString(): string } }> | undefined;
             if (missingInvitees && missingInvitees.length > 0) {
                 const err = new Error("User privacy prevents adding to channel");
                 Object.assign(err, { errorMessage: "USER_PRIVACY_RESTRICTED" });
                 throw err;
-            }
-
-            // Verify the user is actually an active member (not pending/banned/left).
-            // InviteToChannel already succeeded with no missingInvitees, so this is a
-            // best-effort double-check. GetParticipant can fail for reasons unrelated to
-            // membership (min/stale access hash → USER_ID_INVALID, replication lag, or the
-            // account lacking rights to query members), so only an explicit
-            // USER_NOT_PARTICIPANT — meaning the channel created a join request instead of
-            // adding the user — counts as a real failure.
-            let verifyResult: Awaited<ReturnType<typeof client.invoke<Api.channels.GetParticipant>>> | null = null;
-            try {
-                verifyResult = await client.invoke(new Api.channels.GetParticipant({ channel, participant: inputUser }));
-            } catch (checkErr: any) {
-                if (checkErr?.errorMessage === "USER_NOT_PARTICIPANT") {
-                    const notAdded = new Error("User was not added to channel");
-                    Object.assign(notAdded, { errorMessage: "USER_NOT_PARTICIPANT_AFTER_INVITE" });
-                    throw notAdded;
-                }
-                // Couldn't verify, but the invite itself succeeded — treat as added.
-                return;
-            }
-            if (
-                verifyResult.participant instanceof Api.ChannelParticipantBanned ||
-                verifyResult.participant instanceof Api.ChannelParticipantLeft
-            ) {
-                const notActive = new Error("User is banned or left the channel");
-                Object.assign(notActive, { errorMessage: "USER_NOT_PARTICIPANT_AFTER_INVITE" });
-                throw notActive;
             }
         } finally {
             await client.disconnect();
